@@ -163,7 +163,7 @@ setup_hivbackcalc = function(workd, datafile, source_these, loadlib=TRUE,
       cat('Loading libraries...\n')
       # Load libraries
       # Eventually, make these dependencies of the HIBBackCalc package?
-      library(HIVBackCalc)
+      # library(HIVBackCalc)
       library(reshape2)
       library(plyr)
       library(ggplot2)
