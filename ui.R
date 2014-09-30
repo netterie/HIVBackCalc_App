@@ -1,9 +1,10 @@
 library(shiny)
+library(shinyIncubator)
 
 shinyUI(
   navbarPage('HIV Backcalculation',
              
-             tabPanel('Select Data',
+             tabPanel('Load Data',
              
                  sidebarLayout(
                    fluid=FALSE,
@@ -33,19 +34,70 @@ shinyUI(
                    mainPanel(
                      h5('File Contents'),
                      p('The first 10 rows are displayed to confirm the successful selection/
-                       upload of your data. Please proceed to the "Data Summary" section next.'),
-                     tableOutput('contents')
+                       upload of your data. Please proceed to the "Examine Data" section next.'),
+                     tableOutput('data_10rows')
                    )
                  )
              ),
-             tabPanel('Data Summary',
+             tabPanel('Examine Data',
                 tabsetPanel('Summary Tabs',
-                tabPanel('Overview'),
-                tabPanel('Diagnoses'),
-                tabPanel('Testing Histories')
+                tabPanel('Overview',
+                   h5('Description of sample by age, race and mode of transmission'),
+                   tableOutput('describe_sample')
+                ),
+                tabPanel('Diagnoses',
+                   h5('Reported number of diagnosed cases over time'),
+                   plotOutput('diagnoses_plot')
+                ),
+                tabPanel('Testing Histories',
+                   h5('Testing history responses over time'),
+                   p('When asked "Have you ever had a prior negative test?", cases could report "Yes", "No", or not answer the question'),
+                   plotOutput('testinghistories_plot')
+                )
                 )),
-             tabPanel('TID'),
-             tabPanel('Run Model'),
+             tabPanel('Calculate TID',
+               h5('Time from infection to diagnosis (TID), under three scenarios:'),
+               em('1. Base Case'), div('Missing testing history data are considered missing at random and are excluded from calculating the TID. The probability of infection is uniformly distributed between the time of last negative test and time of diagnosis.'),
+               br(),
+               em('2. Worst Case (Obs)'), div('Missing testing history data are considered missing at random and are excluded from calculating the TID. Infection is assumed to occur immediately following the date of last negative test, a worst case assumption.'),
+               br(),
+               em('3. Worst Case (Miss)'), div('Missing testing history data are imputed using the assumption that infection occurred either 18 years prior to diagnosis or at age 16, whichever is more recent. For cases with testing history, infection is assumed to occur immediately following the date of last negative test.'),
+               br(),
+               plotOutput('tid_plot')
+             ),
+             tabPanel('Backcalculate Infections',
+               progressInit(),
+               sidebarLayout(
+                  fluid=FALSE,
+                  sidebarPanel(
+                     h5('Click to backcalculate infections'),
+                     actionButton('go', label='Run backcalculation')
+                  ),
+                  mainPanel(
+                     # This accesses the stylesheet, which just sets a 
+                     # location for the progress bar. Thanks to:
+                     # https://groups.google.com/forum/#!topic/shiny-discuss/VzGkfPqLWkY 
+                     # and https://github.com/johndharrison/Seed
+                     tags$link(rel='stylesheet', type='text/css',
+                           href='styles.css'),
+                     h5('Results'),
+                     em('Note: counts refer to the time period for which diagnoses
+                        were reported. In the KC data, this time period is a 
+                        quarter-year.'),
+                     br(),
+                     br(),
+                     p('The plot below shows the reported diagnoses over time with
+                       the estimated incidence counts for each of the three TID cases 
+                       (top panel). The bottom panel shows the estimated undiagnosed
+                       counts over time for each of the three TID cases.'),
+                     plotOutput('results_plot'),
+                     p('The table below summarizes reported diagnoses, estimated 
+                       incidence for the three TID cases, and estimated undiagnosed
+                       counts for the three TID cases across all time periods'),
+                     tableOutput('results_table')
+                  )
+               )
+             ),
              tabPanel('Help')
              )
 
