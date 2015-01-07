@@ -1,5 +1,4 @@
 library(shiny)
-library(shinyIncubator)
 
 shinyUI(
   navbarPage('HIV Backcalculation',
@@ -66,7 +65,6 @@ shinyUI(
                plotOutput('tid_plot')
              ),
              tabPanel('Backcalculate Infections',
-               progressInit(),
                sidebarLayout(
                   fluid=FALSE,
                   sidebarPanel(
@@ -78,8 +76,9 @@ shinyUI(
                      # location for the progress bar. Thanks to:
                      # https://groups.google.com/forum/#!topic/shiny-discuss/VzGkfPqLWkY 
                      # and https://github.com/johndharrison/Seed
-                     tags$link(rel='stylesheet', type='text/css',
-                           href='styles.css'),
+                     # tags$link(rel='stylesheet', type='text/css', href='styles.css'),
+                     # Update 1/7/15: commented out in order to get withProgress() built into Shiny 0.10.2 to work
+                            
                      h5('Results'),
                      em('Note: counts refer to the time period for which diagnoses
                         were reported. In the KC data, this time period is a 

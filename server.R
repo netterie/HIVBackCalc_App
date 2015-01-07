@@ -3,7 +3,6 @@
 options(shiny.maxRequestSize = 9*1024^2)
 
 # Source code (eventually load a package)
-library(shinyIncubator)
 library(rootSolve)
 library(ggplot2)
 library(reshape)
@@ -128,11 +127,8 @@ shinyServer(function(input, output, session) {
     allCounts[names(allCounts)%in%names(obsCounts)] <- obsCounts
 
     ##### RUN BACKCALCULATION
-    withProgress(session, {
+    withProgress(message = 'Calculating, please wait', value=0, {
 
-        setProgress(message = 'Calculating, please wait',
-                   detail='Computation will take several minutes...')
-   
         all_noimpute <- runBackCalc(TID=dataf$infPeriod, 
                            impute=FALSE,
                            age=dataf$hdx_age,
@@ -142,7 +138,7 @@ shinyServer(function(input, output, session) {
                            intervalLength=0.25, 
                            printProgress=FALSE) 
 
-        setProgress(detail='50% complete...')
+        incProgress(detail='50% complete...')
 
         all_impute <- runBackCalc(TID=dataf$infPeriod, 
                            impute=TRUE,
