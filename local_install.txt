@@ -44,27 +44,25 @@ https://hivbackcalc.shinyapps.io/HIVBackCalc_App/
 
 1. Download R - choose the link appropriate to your platform (Windows or Mac)
 
-     1a. You can also download RStudio if you like --just a nicer interface to R
+     http://cran.rstudio.com/
 
-     2. Open R or RStudio, and type or copy the following lines into the console, hitting return after each line to install each package:
+     1a. You can also download RStudio Desktop if you like, which is simply a nicer interface to R. Again, choose the link appropriate to your platform  (Windows or Mac)
 
+     http://www.rstudio.com/products/rstudio/download/
 
-     install.packages('shiny', type='source')
-     install.packges('rootSolve')
-     install.packges('ggplot2') 
-     install.packges('reshape') 
-     install.packges('Hmisc') 
-     install.packges('scales') 
-     install.packges('plyr') 
-     install.packges('xtable') 
+2. Open R or RStudio, and type or copy the following lines into the console, hitting return after each line to install each package:
 
-     3. Run the model by typing (again, hit return after each line):
+     install.packages('devtools')
+     library(devtools)
+     source_url('netterie/HIVBackCalc_App/package_installs.R')
+
+3. Run the model by typing (again, hit return after each line):
 
      library(shiny)
      runGitHub('netterie/HIVBackCalc_App', launch.browser=TRUE)
 
-     4. Now you should have the model open in your web browser, and you can use the left panel to choose a data file. Everything is still running locally, so no need to worry about data privacy.
+4. Now you should have the model open in your web browser, and you can use the left panel to choose a data file. Everything is still running locally, so no need to worry about data privacy.
 
-     5. To close the interface, return to R/RStudio and hit the Esc button. To launch it again, just follow step #3.
+5. To close the interface, return to R/RStudio and hit the Esc button. To launch it again, just follow step #3.
 
 
