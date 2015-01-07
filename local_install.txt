@@ -1,0 +1,70 @@
+
+************************************************************
+* BASIC INSTRUCTIONS FOR RUNNING TESTING HISTORY MODEL
+************************************************************
+
+***************************
+* Data Requirements
+***************************
+
+The attached dataset is a fake dataset approximating some testing history data from KC, and it is formatted to work with this prototype version of the app. Right now, the model expects the following column names and data formats:
+
+(Note: if I say a variable "can be fake," it just means that it is a descriptive variable that must be present, but it does not need to have a meaningful value.)
+
+mode - character; describes mode of transmission groups; can be fake
+
+race - character; describes race; can be fake
+
+hdx_age - numeric; age at diagnosis
+
+agecat5 - character; describes 5-year age groups; can be fake
+
+yearDx - numeric; year of diagnosis
+
+timeDx - numeric; quarter-year of diagnosis
+
+everHadNegTest - character with values TRUE, FALSE or NA; answer to question "Have you ever had a negative HIV test?"
+
+infPeriod - numeric; time from last negative test to diagnosis in years
+** if everHadNegTest=FALSE, impute as minimum(age-16, 18)
+
+infPeriod_NA - numeric; same as infPeriod, but now, impute those with everHadNegTest=NA as minimum(age-16, 18)
+
+
+***************************
+* Running the model on the cloud (no data privacy guarantee)
+***************************
+
+https://hivbackcalc.shinyapps.io/HIVBackCalc_App/
+
+
+***************************
+* Running the model locally
+***************************
+
+1. Download R - choose the link appropriate to your platform (Windows or Mac)
+
+     1a. You can also download RStudio if you like --just a nicer interface to R
+
+     2. Open R or RStudio, and type or copy the following lines into the console, hitting return after each line to install each package:
+
+
+     install.packages('shiny', type='source')
+     install.packges('rootSolve')
+     install.packges('ggplot2') 
+     install.packges('reshape') 
+     install.packges('Hmisc') 
+     install.packges('scales') 
+     install.packges('plyr') 
+     install.packges('xtable') 
+
+     3. Run the model by typing (again, hit return after each line):
+
+     library(shiny)
+     runGitHub('netterie/HIVBackCalc_App', launch.browser=TRUE)
+
+     4. Now you should have the model open in your web browser, and you can use the left panel to choose a data file. Everything is still running locally, so no need to worry about data privacy.
+
+     5. To close the interface, return to R/RStudio and hit the Esc button. To launch it again, just follow step #3.
+
+
