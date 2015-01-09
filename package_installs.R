@@ -3,7 +3,7 @@
 # INSTALL PACKAGE DEPENDENCIES FOR HIVBackCalc_App
 ############################################################
 cat('\nInstalling dependent packages...')
-install.packages('shiny', type='source')
+install.packages('shiny')
 install.packages('rootSolve')
 install.packages('ggplot2') 
 install.packages('reshape') 
