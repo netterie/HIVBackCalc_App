@@ -63,6 +63,12 @@ https://hivbackcalc.shinyapps.io/HIVBackCalc_App/
 
 4. Now you should have the model open in your web browser, and you can use the left panel to choose a data file. Everything is still running locally, so no need to worry about data privacy.
 
+    4a. To explore the model using an example dataset, navigate in a browser to
+
+    https://github.com/netterie/HIVBackCalc_App/tree/master/development
+
+    and right-click "data_KC_sim.csv" to download the data to your computer.
+
 5. To close the interface, return to R/RStudio and hit the Esc button. To launch it again, just follow step #3.
 
 
