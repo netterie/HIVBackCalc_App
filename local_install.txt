@@ -50,7 +50,7 @@ https://hivbackcalc.shinyapps.io/HIVBackCalc_App/
 
      http://www.rstudio.com/products/rstudio/download/
 
-2. Open R or RStudio, and type or copy the following lines into the console, hitting return after each line to install each package:
+2. Open R or RStudio, and type or copy the following lines into the console, hitting return after each line. NOTE: if you receive a warning about Rtools, don't worry! 
 
      install.packages('devtools')
      library(devtools)
