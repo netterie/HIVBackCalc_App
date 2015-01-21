@@ -61,6 +61,19 @@ https://hivbackcalc.shinyapps.io/HIVBackCalc_App/
      library(shiny)
      runGitHub('netterie/HIVBackCalc_App', launch.browser=TRUE)
 
+    3a. If you receive an error after the above step, e.g. "cannot open URL",
+    use these alternate instructions:
+
+        A. In a browser, navigate to https://github.com/netterie/HIVBackCalc_App
+        B. Click the "Download ZIP" button in the bottom right corner
+        C. Rename the file "HIVBackCalc_App.zip" (remove the -master part) and save to a simple location, e.g. C:
+        D. Unzip the .zip file in that location
+        E. In R, type the following, hitting "enter" after each line. The syntax below assumes you have unzipped your folder to C:\, so you have the folder C:\HIVBackCalc_App on your machine. If you chose a different location for the HIVBackCalc app, you would need to replace C:\ with the appropriate location, using only forward slashes instead of backslashes, as you see below.
+
+        setwd('C:/HIVBackCalc_App')
+        library(shiny)
+        runApp(, launch.browser=TRUE)
+        
 4. Now you should have the model open in your web browser, and you can use the left panel to choose a data file. Everything is still running locally, so no need to worry about data privacy.
 
     4a. To explore the model using an example dataset, navigate in a browser to
