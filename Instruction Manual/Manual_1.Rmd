@@ -25,8 +25,9 @@ vignette: >
 ### 4 Running HIVBackCalc on an internal system (quick instruction guide)
 ####      4.1 Uploading data
 ####      4.2 Looking at your data with the HIVBackCalc App
-####      4.3 Running the back Calculation
-####      4.4 Ending your session
+####      4.3 Calculate the TID
+####      4.4 Running the back Calculation
+####      4.5 Ending your session
 ### 5 Running HIVBackCalc on the web
 
 
@@ -40,11 +41,15 @@ the time between HIV infection and diagnosis, or TID. These two elements are use
 
 This tool is designed to work with data from the Enhanced HIV/AIDS Reporting System (eHARS).  The following SAS program can be used to extract the required data from eHARS.
 
-* hyperlink to SAS file.
+([SAS Extraction code](https://github.com/netterie/HIVBackCalc_App/tree/master/development))
+
+right-click "Common Read In CBA.sas" to download the script to your computer.
+
+  -Note that the SAS script requires that the eHARS data are in the "person" data file structurte. Future versions of HIVBackCalc will be able to work directly with the "pretest_questionnair" data files and automatically construct the person level data files.   
 
 Once the required variables are extracted from eHARS the HIVBackCalc tool can automatically reformat the eHARS data and construct the variables used in the back-calculation that are not directly reported in eHARS.  The tables below provide a list of the eHARS data that is extracted for use by HIVBackCalc, a list of new variable names and the variable structures that are assigned to the eHARS data for use by HIVBackCalc, and a list of the variables that are constructed for HIVBackCalc.
 
-####eHARS variables   
+####eHARS "person view" variables   
 If using data other than eHARS these are the variable that will need to be provided by the user.
 
 eHARS name  | Description | format
@@ -121,15 +126,19 @@ package.  R will provide output indicating which additional packages are being i
 <img src='installdevtools.png' height='400px' width='800x'>
 
 
-note: If you are running either Windows 7 or windows 8 you may get a notification that you can not write to the 'R\libraries' folder.  This may occur as a result of the default "read only" setting applied to this folder.  You can either change the folder setting or select an alternate folder to store your R packages.     
+
+  - note: If you are running either Windows 7 or windows 8 you may get a notification that you can not write to the 'R\libraries' folder.  This may occur as a result of the default "read only" setting applied to this folder.  You can either change the folder setting or select an alternate folder to store your R packages.     
+     
      
 
 The HIVBackCalc app also uses a web application tool called Shiny that provides a GUI interface for R based applications. The Shiny package and its dependencies are required to run HIVBackCalc.  To download the this software type or copy and paste the command below in to the Rstudio console.  This command will install Shiny and its dependencies. As this command is executed R will provide information about all of the dependencies that are also being installed.  See the example:
 
-source_url('https://gist.github.com/netterie/65ae953108408a62539d/raw/HIVBackCalc_PackageInstalls.R')
+
+  source_url('https://gist.github.com/netterie/65ae953108408a62539d/raw/HIVBackCalc_PackageInstalls.R')
 
 
 <img src='installshiny.png' height='800px' width='800x'>
+
 
 
 Start Shiny with R by typing the following into the R console window and hitting return.
@@ -140,7 +149,7 @@ Start Shiny with R by typing the following into the R console window and hitting
      
 #### 3.3 Downloading the HIVBackCalc App
 
-Once shiny is running in the R session HIVBackCalc can be run by typing (or copy and paste) in to the R console window:
+Once shiny is running in the R session HIVBackCalc can be run by typing the code below in to the R console window (or cut and paste) and pressing enter:
 
      runGitHub('netterie/HIVBackCalc_App', launch.browser=TRUE)
      
@@ -165,15 +174,16 @@ In this example we will use a simulated data set that resembles data from King C
 ([example data](https://github.com/netterie/HIVBackCalc_App/tree/master/development))
 
 right-click "data_KC_sim.csv" to download the data to your computer.
+
     
 ####    3.5 Uploading data to the HIVBackCalc App.
 
 
   1. From the _load data_ tab on the HIVBackCalc app specify that the data has headers, is comma delineated and uses           double quotes.
 
-  3.  Click on the 'choose file' button on the left panel and select the data "data_KC_sim".
+  2.  Click on the _choose file_ button on the left panel and select the data "data_KC_sim".
 
-    -the first 10 rows on the data will be displayed.
+    -the first 10 rows of the data will be displayed.
     
 <img src='loadDataImage.png' height='400px' width='800x'>
 
@@ -181,17 +191,18 @@ right-click "data_KC_sim.csv" to download the data to your computer.
 
   1. Click on the _Examine Data_ tab at the top of the app.  
 
-  2. From the "Examine Data" tab you can look at an overview of your data which includes the distribution of observations across demographic groups as well as the percentage of data within demographic group with the testing history data needed for the back calculation.
+  2. From the _Examine Data_ tab you can look at an overview of your data which includes the distribution of observations across demographic groups as well as the percentage of data within demographic group with the testing history data needed for the back calculation.
   
 In this example you should see that there are 287 men in the 21-25 year old category, which represents 19% of the total sample, 76% of them have testing history data, 10% do not having testing history data, and for 14% the testing history data is missing.
 
 <img src='examinedatatable.png' height='400px' width='800x'>   
 
-  3.  By clicking the "Diagnosis" tab you can see the number of newly diagnoses cases during each quarter year.  In this example you can see that there are fluctuation quarter to quarter but there is no obvious trend from 2006 to 2013. 
+
+  3.  By clicking the _Diagnosis_ tab you can see the number of newly diagnoses cases during each quarter year.  In this example you can see that there are fluctuation quarter to quarter but there is no obvious trend from 2006 to 2013. 
 
 <img src='Repnumdiag.png' height='400px' width='800x'>
 
- ** -Some kind of caveat about assumtions if trends are observed**.
+
 
   4.  By clicking the _Testing Histories_ tab you can see the percentage of respondents that report having had a prior test at each time interval which is between 70% and 80% in these data.  The cases for whom there are no prior test data are further divided into those that are known to have not had a prior test and those for whom prior test data are not known.  
 
@@ -199,24 +210,39 @@ In this example you should see that there are 287 men in the 21-25 year old cate
 
 ####    3.7 Calculate the TID.
 
-By clicking the _Calculate TID_ tab you can see the undiagnosed fraction by duration of infection.  Because TID is calculated using three different sets of assumptions the plot includes all three alternatives.  In this example only about 50% of cases are undiagnosed after 1 year, but in the worst case scenarios 75% of cases remain undiagnosed after 1 year.  You will also note that at 18 years the undiagnosed fraction drops top zero in all cases.  This is due to an assumption in the model that infection can not remain undiagnosed for longer that 18 years. 
+After the data have been reviewed the analysis can be executed by selecting the _calculate TID_ tab at the top of the page.  The TID are automatically calculated and displayed using three different assumptions.  The TID are the basis for the back calculation.  The three sets of assumtions use in calculating TID are:
+
+1. Base Case - Missing testing history data are considered missing at random and are excluded from calculating the TID. The probability of infection is uniformly distributed between the time of last negative test and time of diagnosis.
+
+2. Worst Case (Observed) - Missing testing history data are considered missing at random and are excluded from calculating the TID. Infection is assumed to occur immediately following the date of last negative test, a worst case assumption.
+
+3. Worst Case (Missing data) - Missing testing history data are imputed using the assumption that infection occurred either 18 years prior to diagnosis or at age 16, whichever is more recent. For cases with testing history, infection is assumed to occur immediately following the date of last negative test.
+
+  - Note that HIVBackCalc is currently in the beta testing phase.  The calculation of TID is currently limited to the three sets of assumtions above.  We are currently working to implement additional assumtions for the calcualtion of TID including risk based testing and a uniform distibution for date of infection for those with missing or no reported prior test date.
+
+Clicking the _Calculate TID_ tab will calcualte the TID and display the undiagnosed fraction by duration of infection.  Because TID is calculated using three different sets of assumptions the plot includes all three alternatives.  In this example only about 50% of cases are undiagnosed after 1 year, but in the worst case scenarios 75% of cases remain undiagnosed after 1 year.  You will also note that at 18 years the undiagnosed fraction drops top zero in all cases.  This is due to an assumption in the model that infection can not remain undiagnosed for longer that 18 years. 
 
 <img src='TIDplot.png' height='400px' width='800x'>  
-  
-  ** -Some kind of caveat about assumtions if trends are observed or if the percentage of prior tests is low either due to low testing rates or high missingness**.
+
+
   
 ####    3.8 Running the back Calculation
 
-Click on the _Backcalculate infections_ tab at the top of the app to get to the Back calculation section.  Clicking on the _run backcalculation_ button on the right will run the back-calculation.  This may take a few moments. 
+Click on the _Backcalculate infections_ tab at the top of the app to get to the Back calculation section.  Clicking on the _run backcalculation_ button on the left will run the back-calculation.  This may take a few moments. 
 
-The plot and the table provide the same information in different forms including the number of diagnosed cases during each quarter, the predicted incidence and the estimated number of undiagnosed cases.  The incidence and the number of undiagnosed cases are generate under the three different set of assumptions for calculating the TID.  As you can see in the plot below, in this example the different assumptions had little impact on the estimated incidence but a substantial impact on the estimates of the number of undiagnosed cases.     
+The plot and the table that are generated after the backcalculation is completed provide the same information in different formats.  Each includes the number of diagnosed cases during each quarter, the predicted incidence and the estimated number of undiagnosed cases.  The incidence and the number of undiagnosed cases are generate under the three different set of assumptions for calculating the TID.  As you can see in the plot below, in this example the different assumptions had little impact on the estimated incidence but a substantial impact on the estimates of the number of undiagnosed cases.     
+
 
 <img src='backcalcplot.png' height='400px' width='800x'> 
+
 
 <img src='backcalctable.png' height='400px' width='800x'> 
 
 
 
+### 4. Running HIVBackCalc on an internal system (qick instuction guide).
+
+If the user is familiar with R and has HIVBackCalc installed on their system this section provides a brief overview of the HIVBAckCalc functionality.
 
 #### 4.1 Uploading data
 
@@ -231,7 +257,6 @@ After HIVBackCalc has opened in the web browser, the panel on the left can be us
 
 #### 4.2 Looking at your data with the HIVBackCalc App
 
-##### Examine Data.
 Once the data are loaded a data summary is created and can be viewed by selected the _Examine Data_ tab at the top of the app.  Under the _Examine Data_ tab there are three sub-tabs.
 
   1. _Overview_ - provides the number of observations in each demographic group as well as the fraction of the total sample in each demographic group.  The overview also includes the percentage of each subgroup that has testing history data which will be used to calculate the time between infection and diagnosis (TID)  which is the basis of the back-calculation.
@@ -240,10 +265,11 @@ Once the data are loaded a data summary is created and can be viewed by selected
   
   3. _Testing Histories_ - This graph provides the percentage of the sample during each water that had a prior negative test, did not have a prior negative test, or had missing testing history data.  
   
-      -note:  The higher the proportion of cases that either do not have a prior negative test or have missing data the greater the potential impact of some modeling assumptions on the TID calculation and the back-calculation.  These assumptions and their impact on model predictions are discussed further here **(URL link to a working paper)**
+      - note:  The higher the proportion of cases that either do not have a prior negative test or have missing data the greater the potential impact of some modeling assumptions on the TID calculation and the back-calculation.  These assumptions and their impact on model predictions are discussed further here **(URL link to a working paper)**
 
 
-##### Calculate TID.
+#### 4.3 Calculating the TID.
+
 After the data have been reviewed the analysis can be executed by selecting the _calculate TID_ tab at the top of the page.  The TID are automatically calculated and displayed using three different assumptions.  The TID are the basis for the back calculation.
 
 1. Base Case - Missing testing history data are considered missing at random and are excluded from calculating the TID. The probability of infection is uniformly distributed between the time of last negative test and time of diagnosis.
@@ -252,14 +278,15 @@ After the data have been reviewed the analysis can be executed by selecting the 
 
 3. Worst Case (Missing data) - Missing testing history data are imputed using the assumption that infection occurred either 18 years prior to diagnosis or at age 16, whichever is more recent. For cases with testing history, infection is assumed to occur immediately following the date of last negative test.
 
+  - Note that HIVBackCalc is currently in the beta testing phase.  The calculation of TID is currently limited to the three sets of assumtions above.  We are currently working to implement additional assumtions for the calcualtion of TID including risk based testing and a uniform distibution for date of infection for those with missing or no reported prior test date.
 
-#### 4.3 Running the back Calculation
+#### 4.4 Running the back Calculation
 
 Select the _Backcalculate infections_ tab at the top of the screen.  Click on the _run Infections_ button on the left.  This may take a few minutes to complete.
 
 Once the calculations are complete the HIVBackCalc app will produce a plot and a table.  The top half of the plot provides counts of the number of newly diagnosed cases in each quarter as well as the predicted incidence under each of the assumptions TID calculation assumptions mentioned in the previous step.  The lower half of the plot provides counts of undiagnosed cases at each quarter under each of the three TID calculation assumptions.  The table provides the same information in tabular form. 
 
-#### 4.4 Ending your session.
+#### 4.5 Ending your session.
 
 To close the interface, return to R/RStudio and hit the Esc button. 
 
