@@ -35,24 +35,25 @@ vignette: >
 ##Introduction
 
 HIVBackCalc is a tool for the estimation of HIV incidence and undiagnosed cases. The method combines data on the number of diagnoses per quarter with information on the distribution of
-the time between HIV infection and diagnosis, or TID. These two elements are used to back-calculate the number of incident cases per quarter that must have occurred in order to produce the observed number of diagnoses. The number of undiagnosed cases per quarter are those cases who are estimated to have already been infected but not yet diagnosed in a given quarter. Because TID is not directly observed, the method uses the time between last negative HIV test and diagnosis to approximate TID. 
+the time between HIV infection and diagnosis, or TID. These two elements are used to backcalculate the number of incident cases per quarter that must have occurred in order to produce the observed number of diagnoses. The number of undiagnosed cases per quarter are those cases who are estimated to have already been infected but not yet diagnosed in a given quarter. Because TID is not directly observed, the method uses the time between last negative HIV test and diagnosis to approximate TID. Additional reading can be found here [HIVBackCalc working paper](https://github.com/netterie/Undiagnosed/blob/master/literature/undiagnosed_PlosOne_submitted.pdf?raw=true).
 
-## Data Requirments
+## Data requirments
 
 This tool is designed to work with data from the Enhanced HIV/AIDS Reporting System (eHARS).  The following SAS program can be used to extract the required data from eHARS.
 
-([SAS Extraction code](https://github.com/netterie/HIVBackCalc_App/tree/master/development))
 
-right-click "Common Read In CBA.sas" to download the script to your computer.
+([SAS Extraction code](https://raw.githubusercontent.com/netterie/HIVBackCalc_App/master/development/Common Read In CBA.sas))
 
-  -Note that the SAS script requires that the eHARS data are in the "person" data file structurte. Future versions of HIVBackCalc will be able to work directly with the "pretest_questionnair" data files and automatically construct the person level data files.   
+right-click on any white space and use _save as_ to download the script to your computer.
 
-Once the required variables are extracted from eHARS the HIVBackCalc tool can automatically reformat the eHARS data and construct the variables used in the back-calculation that are not directly reported in eHARS.  The tables below provide a list of the eHARS data that is extracted for use by HIVBackCalc, a list of new variable names and the variable structures that are assigned to the eHARS data for use by HIVBackCalc, and a list of the variables that are constructed for HIVBackCalc.
+  -Note that the SAS script requires that the eHARS data are in the "person" data file structure. Future versions of HIVBackCalc will be able to work directly with the "pretest_questionair" data files and automatically construct the person level data files.   
+
+Once the required variables are extracted from eHARS the HIVBackCalc tool can automatically reformat the eHARS data and construct the variables used in the back-calculation that are not directly reported in eHARS.  The tables below provide a list of the eHARS variables needed by HIVBackCalc, a list of new variable names and the variable structures that are assigned to the eHARS data for use by HIVBackCalc, and a list of the variables that are constructed for HIVBackCalc.
 
 ####eHARS "person view" variables   
 If using data other than eHARS these are the variable that will need to be provided by the user.
 
-eHARS name  | Description | format
+eHARS name  | Description | Type
 ------------- | ------------- | -------------
 hiv_aids_age_yrs | age at diagnosis in years |
 race | race  | categorical
@@ -71,14 +72,14 @@ tth_last_neg_dt | TTH: date of last neg HIV test |
 tth_first_pos_dt | TTH: date of first pos HIV test |
 
 
-####New Variable names and formating
-The HIVBackCalc will automatically rename and transform the eHARS data in to the following Variables.
+####New variable names and format
+Ultimately, the HIVBackCalc will automatically rename and transform the eHARS data in to the following Variables.  Currently the beta version of the application requires that the user format the data using the following variable names and values:
 
 
-Variable name  | Description | format | Values
+Variable name  | Description | Type | Values
 ------------- | ------------- | ------------- | -------------
 mode | mode of transmission groups | character | TBD
-hdx_age | age at diagnosis | character |
+hdx_age | age at diagnosis | numeric |
 yearDx | year of diagnosis | numeric | 
 everHadNegTest | ever had a negative HIV test | character | TRUE FALSE or NA
 
@@ -97,7 +98,7 @@ infPeriod | time from last negative test to diagnosis in years | numeric |
 
 ## 3 Running HIVBackCalc on an internal system
 
-This section provides a step by step example to illustrate the use and functionality of HIVBackCalc beginning with installing the necessary software and working all the way through importing and analyzing data.  Users already familiar with R may skip forward to section 4 of this guide which provides an abbreviated reference guide for using HIVBackCalc.  HIVBackCalc is an open source application available for download and use on internal systems.  While HIVBackCalc is designed to be an easy to use application with an intuitive GUI interface it depends upon R software, a free software environment for statistical computing and graphics, and several R packages including _devtools_ and _Shiny_.  In order to run HIVBackCalc you must have the R software and supporting R packages downloaded on your local machine. The HIVBackCalc App also uses the web browser to provide an easy to use front end.  Before trying to run HIVBackCalc please make sure your browser is up to data.
+This section provides a step by step example to illustrate the use and functionality of HIVBackCalc beginning with installing the necessary software and working all the way through importing and analyzing data.  Users already familiar with R may skip forward to section 4 of this guide which provides an abbreviated reference guide for using HIVBackCalc.  HIVBackCalc is an open source application available for download and use on internal systems.  While HIVBackCalc is designed to be an easy to use application with an intuitive GUI interface it depends upon R software, a free software environment for statistical computing and graphics, and several R packages including _devtools_ and _shiny_.  In order to run HIVBackCalc you must have the R software and supporting R packages downloaded on your local machine. The HIVBackCalc App also uses the web browser to provide an easy to use front end.  Before trying to run HIVBackCalc please make sure your browser is up to date.  Google chrome is recomended.  There are know issues with older versions of Internet Explorer.
 
 #### 3.1 Downloading R
 
@@ -112,13 +113,13 @@ After installing R you will need to install Rstudio which is a GUI user interfac
     
 #### 3.2 Downloading R packages
 
-After installing Rstudio several R packages will also need to be downloaded and installed.  To download and install the _devtools_ package:
+After installing Rstudio several R packages will also need to be downloaded and installed.  To download and install the _devtools_ package:  
 
-      1. Open RStudio
-      2. Type or copy the following lines into the R console window, hitting return after each line:
+1. Open RStudio
+2. Type or copy the following lines into the R console window, hitting return after each line:
 
-     install.packages('devtools')
-     library(devtools)
+        install.packages('devtools')
+        library(devtools)
 
 When installing _devtools_ R will automatically install any additional packages that are required by the _devtools_
 package.  R will provide output indicating which additional packages are being installed.  See the example below:
@@ -127,23 +128,23 @@ package.  R will provide output indicating which additional packages are being i
 
 
 
-  - note: If you are running either Windows 7 or windows 8 you may get a notification that you can not write to the 'R\libraries' folder.  This may occur as a result of the default "read only" setting applied to this folder.  You can either change the folder setting or select an alternate folder to store your R packages.     
+  - Note: If you are running either Windows 7 or Windows 8 you may get a notification that you can not write to the 'R\libraries' folder.  This may occur as a result of the default "read only" setting applied to this folder.  You can either change the folder setting or select an alternate folder to store your R packages. Also, disregard any warnings in the console regaurding the installation of _rtools_.    
      
      
 
 The HIVBackCalc app also uses a web application tool called Shiny that provides a GUI interface for R based applications. The Shiny package and its dependencies are required to run HIVBackCalc.  To download the this software type or copy and paste the command below in to the Rstudio console.  This command will install Shiny and its dependencies. As this command is executed R will provide information about all of the dependencies that are also being installed.  See the example:
 
 
-  source_url('https://gist.github.com/netterie/65ae953108408a62539d/raw/HIVBackCalc_PackageInstalls.R')
+      source_url('https://gist.github.com/netterie/65ae953108408a62539d/raw/HIVBackCalc_PackageInstalls.R')
 
 
 <img src='installshiny.png' height='800px' width='800x'>
 
 
 
-Start Shiny with R by typing the following into the R console window and hitting return.
+Start Shiny with R by typing the following into the R console window and hitting return:
 
-     library(shiny)
+     library(shiny)  
 
 
      
@@ -151,16 +152,16 @@ Start Shiny with R by typing the following into the R console window and hitting
 
 Once shiny is running in the R session HIVBackCalc can be run by typing the code below in to the R console window (or cut and paste) and pressing enter:
 
-     runGitHub('netterie/HIVBackCalc_App', launch.browser=TRUE)
+     runGitHub('netterie/HIVBackCalc_App', launch.browser=TRUE)  
      
 
-If an error appears after the above step, e.g. "cannot open URL", use these alternate instructions:
+If an error appears after the above step, e.g. "cannot open URL", use these alternate instructions.
 
-        A. In a browser, navigate to https://github.com/netterie/HIVBackCalc_App
-        B. Click the "Download ZIP" button in the bottom right corner
-        C. Rename the file "HIVBackCalc_App.zip" (remove the -master part) and save to a simple location, e.g. C:
-        D. Unzip the .zip file in that location
-        E. In R, type the following, hitting "enter" after each line. The syntax below assumes that the folder has been unzipped to C:\, so the folder C:\HIVBackCalc_App is on the machine. If a different location is selected for the HIVBackCalc app, replace C:\ with the appropriate location, using only forward slashes instead of backslashes, as shown below.
+A. In a browser, navigate to https://github.com/netterie/HIVBackCalc_App  
+B. Click the "Download ZIP" button in the bottom right corner  
+C. Rename the file "HIVBackCalc_App.zip" (remove the -master part) and save to a simple location, e.g. C:  
+D. Unzip the .zip file in that location  
+E. In R, type the following, hitting "enter" after each line. The syntax below assumes that the folder has been unzipped to C:\, so the folder C:\HIVBackCalc_App is on the machine. If a different location is selected for the HIVBackCalc app, replace C:\ with the appropriate location, using only forward slashes instead of backslashes, as shown below.  
 
         setwd('C:/HIVBackCalc_App')
         library(shiny)
@@ -171,15 +172,15 @@ If an error appears after the above step, e.g. "cannot open URL", use these alte
 
 In this example we will use a simulated data set that resembles data from King County Washington. The example data set can be downloaded using the link below.
 
-([example data](https://github.com/netterie/HIVBackCalc_App/tree/master/development))
+([example data](https://raw.githubusercontent.com/netterie/HIVBackCalc_App/master/development/data_KC_sim.csv))
 
-right-click "data_KC_sim.csv" to download the data to your computer.
+right-click on any whitespace and use the _save as_ to download the data to your computer.
 
     
 ####    3.5 Uploading data to the HIVBackCalc App.
 
 
-  1. From the _load data_ tab on the HIVBackCalc app specify that the data has headers, is comma delineated and uses           double quotes.
+  1. From the _load data_ tab on the HIVBackCalc app you ccan specify the data file format.  The default settings specify that the data has headers, is comma delineated and uses double quotes.  The default is the correct specification for the example data file.
 
   2.  Click on the _choose file_ button on the left panel and select the data "data_KC_sim".
 
@@ -218,19 +219,19 @@ After the data have been reviewed the analysis can be executed by selecting the 
 
 3. Worst Case (Missing data) - Missing testing history data are imputed using the assumption that infection occurred either 18 years prior to diagnosis or at age 16, whichever is more recent. For cases with testing history, infection is assumed to occur immediately following the date of last negative test.
 
-  - Note that HIVBackCalc is currently in the beta testing phase.  The calculation of TID is currently limited to the three sets of assumtions above.  We are currently working to implement additional assumtions for the calcualtion of TID including risk based testing and a uniform distibution for date of infection for those with missing or no reported prior test date.
+  - Note that HIVBackCalc is currently in the beta testing phase.  The calculation of TID is currently limited to the three sets of assumptions above.  We are currently working to implement additional assumptions for the calculation of TID including risk based testing and a uniform distibution for date of infection for those with missing or no reported prior test date.
 
-Clicking the _Calculate TID_ tab will calcualte the TID and display the undiagnosed fraction by duration of infection.  Because TID is calculated using three different sets of assumptions the plot includes all three alternatives.  In this example only about 50% of cases are undiagnosed after 1 year, but in the worst case scenarios 75% of cases remain undiagnosed after 1 year.  You will also note that at 18 years the undiagnosed fraction drops top zero in all cases.  This is due to an assumption in the model that infection can not remain undiagnosed for longer that 18 years. 
+Clicking the _Calculate TID_ tab will calcualte the TID and display the estimated distibution of the proportion of HIV cases that remain undiagnosed over time since infection.  Because TID is calculated using three different sets of assumptions the plot includes all three alternatives.  In this example only about 50% of cases are undiagnosed after 1 year in the base case, but in the worst case scenarios over 75% of cases remain undiagnosed after 1 year.  You will also note that at 18 years the undiagnosed fraction drops top zero in all cases.  This is due to an assumption in the model that infection can not remain undiagnosed for longer that 18 years. 
 
 <img src='TIDplot.png' height='400px' width='800x'>  
 
 
   
-####    3.8 Running the back Calculation
+####    3.8 Running the Backcalculation
 
-Click on the _Backcalculate infections_ tab at the top of the app to get to the Back calculation section.  Clicking on the _run backcalculation_ button on the left will run the back-calculation.  This may take a few moments. 
+Click on the _Backcalculate infections_ tab at the top of the app to get to the backcalculation section.  Clicking on the _run backcalculation_ button on the left will run the back-calculation.  This may take a few moments. 
 
-The plot and the table that are generated after the backcalculation is completed provide the same information in different formats.  Each includes the number of diagnosed cases during each quarter, the predicted incidence and the estimated number of undiagnosed cases.  The incidence and the number of undiagnosed cases are generate under the three different set of assumptions for calculating the TID.  As you can see in the plot below, in this example the different assumptions had little impact on the estimated incidence but a substantial impact on the estimates of the number of undiagnosed cases.     
+The plot and the table that are generated after the backcalculation is completed provide the same information in different formats.  Each provides quarterly diagnosis counts along with estimated quarterly incidence counts and undiagnosed counts.  While the plot shows these statistics for each quarter within the data's time period, the table summarizes them over time.  The incidence and the number of undiagnosed cases are generate under the three different set of assumptions for calculating the TID.  As you can see in the plot below, in this example the different assumptions had little impact on the estimated incidence but a substantial impact on the estimates of the number of undiagnosed cases.     
 
 
 <img src='backcalcplot.png' height='400px' width='800x'> 
@@ -242,7 +243,7 @@ The plot and the table that are generated after the backcalculation is completed
 
 ### 4. Running HIVBackCalc on an internal system (qick instuction guide).
 
-If the user is familiar with R and has HIVBackCalc installed on their system this section provides a brief overview of the HIVBAckCalc functionality.
+If the user is familiar with R and has HIVBackCalc installed on their system this section provides a brief overview of the HIVBackCalc functionality.
 
 #### 4.1 Uploading data
 
@@ -265,10 +266,12 @@ Once the data are loaded a data summary is created and can be viewed by selected
   
   3. _Testing Histories_ - This graph provides the percentage of the sample during each water that had a prior negative test, did not have a prior negative test, or had missing testing history data.  
   
-      - note:  The higher the proportion of cases that either do not have a prior negative test or have missing data the greater the potential impact of some modeling assumptions on the TID calculation and the back-calculation.  These assumptions and their impact on model predictions are discussed further here **(URL link to a working paper)**
+      - note:  The higher the proportion of cases that either do not have a prior negative test or have missing data the greater the potential impact of some modeling assumptions on the TID calculation and the back-calculation.  These assumptions and their impact on model predictions are discussed further here:
+      
+[HIVBackCalc working paper](https://github.com/netterie/Undiagnosed/blob/master/literature/undiagnosed_PlosOne_submitted.pdf?raw=true)
 
 
-#### 4.3 Calculating the TID.
+#### 4.3 Calculating the TID
 
 After the data have been reviewed the analysis can be executed by selecting the _calculate TID_ tab at the top of the page.  The TID are automatically calculated and displayed using three different assumptions.  The TID are the basis for the back calculation.
 
@@ -297,6 +300,6 @@ The HIVBackCalc tool can also be run online using the online Shiny App.To run HI
 ([hivbackcalc](https://hivbackcalc.shinyapps.io/HIVBackCalc_App/))
 
 
-    -Warning: data uploaded to the online version of HIVBackCalc are not secure!!!.
+__-Warning: data uploaded to the online version of HIVBackCalc are not secure!!!__
     
 
