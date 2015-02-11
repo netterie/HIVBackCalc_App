@@ -39,7 +39,7 @@ the time between HIV infection and diagnosis, or TID. These two elements are use
 
 ## Data requirments
 
-This tool is designed to work with data from the Enhanced HIV/AIDS Reporting System (eHARS).  The following SAS program can be used to extract the required data from eHARS.
+This tool is designed to work with data from the Enhanced HIV/AIDS Reporting System (eHARS) person files.  The following SAS program can be used to extract the required data from eHARS person files.
 
 
 ([SAS Extraction code](https://raw.githubusercontent.com/netterie/HIVBackCalc_App/master/development/Common Read In CBA.sas))
@@ -48,7 +48,11 @@ right-click on any white space and use _save as_ to download the script to your 
 
   -Note that the SAS script requires that the eHARS data are in the "person" data file structure. Future versions of HIVBackCalc will be able to work directly with the "pretest_questionair" data files and automatically construct the person level data files.   
 
-Once the required variables are extracted from eHARS the HIVBackCalc tool can automatically reformat the eHARS data and construct the variables used in the back-calculation that are not directly reported in eHARS.  The tables below provide a list of the eHARS variables needed by HIVBackCalc, a list of new variable names and the variable structures that are assigned to the eHARS data for use by HIVBackCalc, and a list of the variables that are constructed for HIVBackCalc.
+Once the required variables are extracted from eHARS the user will need to modify/construct a few key variables used by the HIVBackCalc tool.  
+
+  -Note: In future versions of HIVBackCalc the tool will automatically reformat the eHARS data and construct the variables used in the back-calculation that are not directly reported in eHARS.  
+  
+The tables below provide a list of the eHARS variables needed by HIVBackCalc and a list of new variable names and the variable structures that will need to be created by the user for use by HIVBackCalc.
 
 ####eHARS "person view" variables   
 If using data other than eHARS these are the variable that will need to be provided by the user.
@@ -82,14 +86,6 @@ mode | mode of transmission groups | character | TBD
 hdx_age | age at diagnosis | numeric |
 yearDx | year of diagnosis | numeric | 
 everHadNegTest | ever had a negative HIV test | character | TRUE FALSE or NA
-
-    
-
-####Construted Varibles
-These new variables will automatically be constructed from the eHARS data for use in the back calculation and reporting.  
-
-Variable name  | Description | format | Values
-------------- | ------------- | ------------- | -------------
 race | race | character | white, Black, Other
 agecat5 | describes 5-year age groups | character
 timeDx | quarter-year of diagnosis | numeric | 1 to 4
