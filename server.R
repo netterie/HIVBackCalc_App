@@ -108,7 +108,7 @@ shinyServer(function(input, output, session) {
   })
 
   dataf <- reactive({
-      if (is.null(input$svars_chooser) | (input$svars_chooser=='') | (input$svars_chooser=='All'){
+      if (is.null(input$svars_chooser) | (input$svars_chooser=='') | (input$svars_chooser=='All')){
 		dataf <- rawdata()}
 		else {
           subset <- rawdata()[,input$svars_chooser]==input$svars_values_chooser
