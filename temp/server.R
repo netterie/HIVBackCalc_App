@@ -16,66 +16,30 @@ source('development/other.R')
 shinyServer(function(input, output, session) {
 
   ################################################## 
-  # DATASET SELECTION
-  ################################################## 
-
-  output$upload_data <- renderUI({
-      if (input$data_choice=='Upload data') {
-        tagList(
-            fileInput('file1', 'Choose CSV File',
-                   accept=c('text/csv', 
-                            'text/comma-separated-values,text/plain', 
-                            '.csv')),
-            tags$hr(),
-            checkboxInput('header', 'Header', TRUE),
-            radioButtons('sep', 'Separator',
-                      c(Comma=',',
-                        Semicolon=';',
-                        Tab='\t'),
-                      ','),
-            radioButtons('quote', 'Quote',
-                      c(None='',
-                        'Double Quote'='"',
-                        'Single Quote'="'"),
-                      '"')                 
-        )
-      } 
-  })
-
-  ################################################## 
-  # LOAD AND DISPLAY DATA
+  # LOAD INPUT CSV
   ################################################## 
   # Access as rawdata()
 
   rawdata <- reactive({
 
-      # Note that stringsAsFactors=FALSE in read.csv to 
-      # to facilitate subgroup selection later.
+    # input$file1 will be NULL initially. After the user selects
+    # and uploads a file, it will be a data frame with 'name',
+    # 'size', 'type', and 'datapath' columns. The 'datapath'
+    # column will contain the local filenames where the data can
+    # be found.
 
-      switch(input$data_choice,
-             'Upload data' = {
-                # input$file1 will be NULL initially. After the user selects
-                # and uploads a file, it will be a data frame with 'name',
-                # 'size', 'type', and 'datapath' columns. The 'datapath'
-                # column will contain the local filenames where the data can
-                # be found.
-
-                inFile <- input$file1
-                
-                if (is.null(inFile))
-                  return(NULL)
-                
-                read.csv(inFile$datapath, header=input$header, sep=input$sep, 
-                         quote=input$quote, stringsAsFactors=FALSE)
-             },
-             'MSM in King County, WA' = {
-                 read.csv('./development/data_KC_sim.csv', 
-                          header=TRUE,
-                          stringsAsFactors=FALSE)
-             }
-      )
+    inFile <- input$file1
+    
+    if (is.null(inFile))
+      return(NULL)
+    
+    read.csv(inFile$datapath, header=input$header, sep=input$sep, 
+             quote=input$quote)
   })
 
+  ################################################## 
+  # VIEW INPUT CSV
+  ################################################## 
   output$data_10rows <- renderTable({
 
     data <- rawdata()
@@ -85,39 +49,13 @@ shinyServer(function(input, output, session) {
   })
   
   ################################################## 
-  # SELECT SUBSET 
+  # SELECT SUBSET - NOT CODED YET
   ################################################## 
-  # Access as dataf()
   
-  output$svars_chosen <- renderUI({
-
-      svar_options <- colnames(rawdata())
-      selectizeInput('svars_chooser', 'Select the variable that defines your subgroups:',
-                    choices = svar_options,
-                    options = list(placeholder = 'Select a variable below',
-                                   onInitialize = I('function() { this.setValue(""); }')))
-  })
-
-  output$svars_values <- renderUI({
-      if (!is.null(input$svars_chooser)) {
-        if (input$svars_chooser!='') {
-          dataf <- rawdata()
-          values <- unique(dataf[,input$svars_chooser])
-          selectizeInput('svars_values_chooser', 'Select the subgroup:',
-                    choices = values)
-        }
-      }
-  })
-
   dataf <- reactive({
-      if (input$svars_chooser!='') {
-          subset <- rawdata()[,input$svars_chooser]==input$svars_values_chooser
-          dataf <- rawdata()[subset,]
-      } else dataf <- rawdata()
-
+    dataf <- rawdata()
   })
 
- 
   ################################################## 
   # DESCRIBE SAMPLE
   ################################################## 

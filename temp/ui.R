@@ -13,32 +13,28 @@ shinyUI(
                        on a dataset of your choice.'),
                      h5('Data File'),
                      p('Select either the example dataset, or upload your own.'),
-                     selectInput('data_choice', 'Choose data source',
-                                 choices=c('MSM in King County, WA',
-                                           'Upload data')),
-                     uiOutput('upload_data'),
-                     br(), br(), br()
+                     fileInput('file1', 'Choose CSV File',
+                               accept=c('text/csv', 
+                                        'text/comma-separated-values,text/plain', 
+                                        '.csv')),
+                     tags$hr(),
+                     checkboxInput('header', 'Header', TRUE),
+                     radioButtons('sep', 'Separator',
+                                  c(Comma=',',
+                                    Semicolon=';',
+                                    Tab='\t'),
+                                  ','),
+                     radioButtons('quote', 'Quote',
+                                  c(None='',
+                                    'Double Quote'='"',
+                                    'Single Quote'="'"),
+                                  '"')                 
                    ),
                    mainPanel(
-                     tabsetPanel('Data Panels',
-                         tabPanel('Confirm Data',
-                             h5('File Contents'),
-                             p('The first 10 rows are displayed to confirm the successful selection/ upload of your data. Please proceed to the "Subgroup" sub-tab next.'),
-                             tableOutput('data_10rows')
-                         ),
-                         tabPanel('Optional: Subgroups',
-                             h5('Optional: Choose a Subgroup'),
-                             p('You may select a subgroup to analyze rather than using your entire sample. When you are done, or if you do not wish to analyze a subgroup, use the tabs at the top of the app to proceed to the "Examine Data" section.'),
-                             uiOutput('svars_chosen'),
-                             uiOutput('svars_values'),
-                             p('Note: if you wish to analyze your full sample, click on the variable selector and use your backspace key to clear the subgroup variable selection.'),
-                             # These line breaks increase the vertical length
-                             # of the screen and helps avoid irritating 
-                             # scrolling
-                             br(), br(), br(), br(), br(), br(), br(), br(), br()
-
-                         )
-                     )
+                     h5('File Contents'),
+                     p('The first 10 rows are displayed to confirm the successful selection/
+                       upload of your data. Please proceed to the "Examine Data" section next.'),
+                     tableOutput('data_10rows')
                    )
                  )
              ),
