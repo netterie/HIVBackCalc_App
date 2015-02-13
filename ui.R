@@ -22,9 +22,10 @@ shinyUI(
                    mainPanel(
                      tabsetPanel('Data Panels',
                          tabPanel('Confirm Data',
+					  column(width=9,	
                              h5('File Contents'),
                              p('The first 10 rows are displayed to confirm the successful selection/ upload of your data. Please proceed to the "Subgroup" sub-tab next.'),
-                             tableOutput('data_10rows')
+                             tableOutput('data_10rows'))
                          ),
                          tabPanel('Optional: Subgroups',
                              h5('Optional: Choose a Subgroup'),
