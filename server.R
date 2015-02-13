@@ -93,28 +93,27 @@ shinyServer(function(input, output, session) {
 
       svar_options <- colnames(rawdata())
       selectizeInput('svars_chooser', 'Select the variable that defines your subgroups:',
-                    choices = svar_options,
+                    choices = c('All',svar_options),
                     options = list(placeholder = 'Select a variable below',
                                    onInitialize = I('function() { this.setValue(""); }')))
   })
 
   output$svars_values <- renderUI({
-      if (!is.null(input$svars_chooser)) {
-        if (input$svars_chooser!='') {
+        if (input$svars_chooser!='' & input$svars_chooser!='All') {
           dataf <- rawdata()
           values <- unique(dataf[,input$svars_chooser])
           selectizeInput('svars_values_chooser', 'Select the subgroup:',
                     choices = values)
         }
-      }
   })
 
   dataf <- reactive({
-      if (input$svars_chooser!='') {
+      if (is.null(input$svars_chooser) | (input$svars_chooser=='') | (input$svars_chooser=='All'){
+		dataf <- rawdata()}
+		else {
           subset <- rawdata()[,input$svars_chooser]==input$svars_values_chooser
           dataf <- rawdata()[subset,]
-      } else dataf <- rawdata()
-
+      } 
   })
 
  
