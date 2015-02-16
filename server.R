@@ -208,7 +208,7 @@ shinyServer(function(input, output, session) {
                            age=dataf$hdx_age,
                            diagnosedCounts=allCounts,
                            upperBound=FALSE, 
-                           runBoth=TRUE,
+                           runBoth=FALSE,
                            intervalLength=0.25, 
                            printProgress=FALSE) 
 

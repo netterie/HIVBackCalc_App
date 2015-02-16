@@ -166,7 +166,7 @@ E. In R, type the following, hitting "enter" after each line. The syntax below a
 
 ####    3.4 Download the example data.
 
-In this example we will use a simulated data set that resembles data from King County Washington. The example data set can be downloaded using the link below.
+In this example we will use a simulated data set that resembles data from King County Washington. The data is preloaded in to the app but the example data set can also be downloaded using the link below.
 
 ([example data](https://raw.githubusercontent.com/netterie/HIVBackCalc_App/master/development/data_KC_sim.csv))
 
@@ -176,9 +176,9 @@ right-click on any whitespace and use the _save as_ to download the data to your
 ####    3.5 Uploading data to the HIVBackCalc App.
 
 
-  1. From the _load data_ tab on the HIVBackCalc app you ccan specify the data file format.  The default settings specify that the data has headers, is comma delineated and uses double quotes.  The default is the correct specification for the example data file.
+  1. From the _load data_ tab on the HIVBackCalc app you can specify the data file format.  The default settings specify that the data has headers, is comma delineated and uses double quotes.  The default is the correct specification for the example data file.
 
-  2.  Click on the _choose file_ button on the left panel and select the data "data_KC_sim".
+  2.  At this point you can use the "MSM in King County, WA" data that is preloaded or click on the _choose file_ button on the left panel and select the data "data_KC_sim".
 
     -the first 10 rows of the data will be displayed.
     
@@ -200,10 +200,21 @@ In this example you should see that there are 287 men in the 21-25 year old cate
 <img src='Repnumdiag.png' height='400px' width='800x'>
 
 
-
   4.  By clicking the _Testing Histories_ tab you can see the percentage of respondents that report having had a prior test at each time interval which is between 70% and 80% in these data.  The cases for whom there are no prior test data are further divided into those that are known to have not had a prior test and those for whom prior test data are not known.  
 
 <img src='testhist.png' height='400px' width='800x'>
+
+  5.  At this point return to the _Load Data_ screen by clicking the _Load Data_ tab.  Just above the table displaying the first 10 rows of data there is an _Optional: Subgroups_ tab next to the _Confirm Data_ tab.  By clicking on this options tab you can elect to conduct the anaysis on a subgroup of the data.  By default all of the data is selected but the user can select a subgroup based on a particular value of any variable in the data set.  First select the variable from which the subgroup will be selected by using the dropdown meanu "Select the variable that defines your subgroups:".  After the variable is selected an additional dropdown menu will appear from which the subgroup value can be selected.  In the example below _race_ has been selected as the subgrouping variable and the subgroup selected is _white_.  
+
+
+<img src='selectsubgroup.png' height='400px' width='800x'>
+
+
+6. By returning to the _Examine Data_ tab you can again look at an overview of your data which includes the distribution of observations across demographic groups as well as the percentage of data within demographic group with the testing history data needed for the back calculation.  However, the data is now limited to just the selected subgroup.  In this case only respondents with _race_=_white_.  
+
+  7.  Return to the _Load Data_ screen, select the _Optional: Subgroups_ tab and select "All" from the dropdown menu so that all of the data will be used through the remainder of the example.  
+
+
 
 ####    3.7 Calculate the TID.
 
