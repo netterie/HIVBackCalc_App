@@ -1,7 +1,7 @@
 library(shiny)
 
 shinyUI(
-  navbarPage('HIV Backcalculation',
+  navbarPage('HIV Undiagnosed',
              
              tabPanel('Load Data',
              
@@ -9,12 +9,11 @@ shinyUI(
                    fluid=FALSE,
                    sidebarPanel(
                      h5('Welcome'),
-                     p('This app runs the HIV back-calculation model developed by Ian Fellows et al 
-                       on a dataset of your choice.'),
+                     p('This app runs the estimation of undiagnosed cases using a dataset of your choice.'),
                      h5('Data File'),
                      p('Select either the example dataset, or upload your own.'),
                      selectInput('data_choice', 'Choose data source',
-                                 choices=c('MSM in King County, WA',
+                                 choices=c('MSM in King County, WA (simulated)',
                                            'Upload data')),
                      uiOutput('upload_data'),
                      br(), br(), br()
@@ -29,7 +28,7 @@ shinyUI(
                          ),
                          tabPanel('Optional: Subgroups',
                              h5('Optional: Choose a Subgroup'),
-                             p('You may select a subgroup to analyze rather than using your entire sample. When you are done, or if you do not wish to analyze a subgroup, use the tabs at the top of the app to proceed to the "Examine Data" section.'),
+                             p('You may select a subgroup to analyze rather than using your entire sample - (comparisons of subgroups is not currently implemented). When you are done, or if you do not wish to analyze a subgroup, use the tabs at the top of the app to proceed to the "Examine Data" section.'),
                              uiOutput('svars_chosen'),
                              uiOutput('svars_values'),
                              p('Note: if you wish to analyze your full sample, click on the variable selector and use your backspace key to clear the subgroup variable selection.'),
@@ -47,6 +46,7 @@ shinyUI(
                 tabsetPanel('Summary Tabs',
                 tabPanel('Overview',
                    h5('Description of sample by age, race and mode of transmission'),
+                   h5(textOutput("text1"))
                    tableOutput('describe_sample')
                 ),
                 tabPanel('Diagnoses',

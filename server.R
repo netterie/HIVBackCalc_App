@@ -68,7 +68,7 @@ shinyServer(function(input, output, session) {
                 read.csv(inFile$datapath, header=input$header, sep=input$sep, 
                          quote=input$quote, stringsAsFactors=FALSE)
              },
-             'MSM in King County, WA' = {
+             'MSM in King County, WA (simulated)' = {
                  read.csv('./development/data_KC_sim.csv', 
                           header=TRUE,
                           stringsAsFactors=FALSE)
@@ -118,7 +118,7 @@ shinyServer(function(input, output, session) {
       } 
   })
 
- 
+ text1<-name(input$svars_chooser)
   ################################################## 
   # DESCRIBE SAMPLE
   ################################################## 
