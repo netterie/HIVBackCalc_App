@@ -118,7 +118,7 @@ shinyServer(function(input, output, session) {
       } 
   })
 
- text1<-name(input$svars_chooser)
+
   ################################################## 
   # DESCRIBE SAMPLE
   ################################################## 

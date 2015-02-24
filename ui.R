@@ -46,7 +46,6 @@ shinyUI(
                 tabsetPanel('Summary Tabs',
                 tabPanel('Overview',
                    h5('Description of sample by age, race and mode of transmission'),
-                   h5(textOutput("text1"))
                    tableOutput('describe_sample')
                 ),
                 tabPanel('Diagnoses',
