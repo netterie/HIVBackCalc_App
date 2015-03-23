@@ -1,8 +1,10 @@
+
 library(shiny)
 
 shinyUI(
   navbarPage('HIV Undiagnosed',
-             
+  
+
              tabPanel('Load Data',
              
                  sidebarLayout(
@@ -15,7 +17,7 @@ shinyUI(
                      selectInput('data_choice', 'Choose data source',
                                  choices=c('MSM in King County, WA (simulated)',
                                            'Upload data')),
-                     uiOutput('upload_data'),
+                     uiOutput('Upload_data'),
                      br(), br(), br()
                    ),
                    mainPanel(
@@ -49,17 +51,17 @@ shinyUI(
                    tableOutput('describe_sample')
                 ),
                 tabPanel('Diagnoses',
-                   h5('Reported number of diagnosed cases over time'),
+                   h5('Reported number of diagnosed cases over time',textOutput("label1")),
                    plotOutput('diagnoses_plot')
                 ),
                 tabPanel('Testing Histories',
-                   h5('Testing history responses over time'),
+                   h5('Testing history responses over time',textOutput("label2")),
                    p('When asked "Have you ever had a prior negative test?", cases could report "Yes", "No", or not answer the question'),
                    plotOutput('testinghistories_plot')
                 )
                 )),
              tabPanel('Calculate TID',
-               h5('Time from infection to diagnosis (TID), under three scenarios:'),
+               h5('Time from infection to diagnosis (TID), under three scenarios:',textOutput("label3")),
                em('1. Base Case'), div('Missing testing history data are considered missing at random and are excluded from calculating the TID. The probability of infection is uniformly distributed between the time of last negative test and time of diagnosis.'),
                br(),
                em('2. Worst Case (Obs)'), div('Missing testing history data are considered missing at random and are excluded from calculating the TID. Infection is assumed to occur immediately following the date of last negative test, a worst case assumption.'),
@@ -72,9 +74,9 @@ shinyUI(
                sidebarLayout(
                   fluid=FALSE,
                   sidebarPanel(
-                     h5('Click to backcalculate infections'),
+                     h5('Click to backcalculate infections:',textOutput("label4")),
                      actionButton('go', label='Run backcalculation')
-                  ),
+                  ),             
                   mainPanel(
                      # This accesses the stylesheet, which just sets a 
                      # location for the progress bar. Thanks to:
@@ -101,7 +103,16 @@ shinyUI(
                   )
                )
              ),
-             tabPanel('Help')
-             )
 
+            tabPanel('Help'),
+            tabPanel('About',p('HIVBackCalc is a tool for the estimation of HIV incidence and undiagnosed cases. The method combines data on the number of diagnoses 
+                               per quarter with information on the distribution of the time between HIV infection and diagnosis, or TID. These two elements are used 
+                               to back-calculate the number of incident cases per quarter that must have occurred in order to produce the observed number of diagnoses. 
+                               The number of undiagnosed cases per quarter are those cases who are estimated to have already been infected but not yet diagnosed in a 
+                               given quarter. Because TID is not directly observed, the method uses the time between last negative HIV test and diagnosis to approximate TID.'),
+                     br(),p('HIVBackCalc is based on the work of Ian E. Fellows, Martina Morris, Julia Dombrowski, Susan Buskin, Amy Bennett, Matthew R. Golden.'),
+                     br(),p('For further information see "A new method for estimating the number of undiagnosed HIV infected based on HIV testing history, with an 
+                            application to men who have sex with men in Seattle/King County, WA" in press.'))
+             )
 )
+

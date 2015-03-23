@@ -106,6 +106,7 @@ shinyServer(function(input, output, session) {
                     choices = values)
         }
   })
+  
 
   dataf <- reactive({
       if (is.null(input$svars_chooser)){ dataf<-rawdata()} 
@@ -118,6 +119,17 @@ shinyServer(function(input, output, session) {
       } 
   })
 
+datalabel<-reactive({
+  if (is.null(input$svars_chooser)) label<-("Subgroup = No Subgroup")
+  else if (input$svars_chooser=="") label<-("Subgroup = No Subgroup")
+  else if (input$svars_chooser=="All") label<-("Subgroup = No Subgroup")
+  else label <-c("Subgroup = ", input$svars_values_chooser)
+})
+
+output$label1<-renderText({datalabel()})
+output$label2<-renderText({datalabel()})
+output$label3<-renderText({datalabel()})
+output$label4<-renderText({datalabel()})
 
   ################################################## 
   # DESCRIBE SAMPLE
