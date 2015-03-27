@@ -17,7 +17,7 @@ shinyUI(
                      selectInput('data_choice', 'Choose data source',
                                  choices=c('MSM in King County, WA (simulated)',
                                            'Upload data')),
-                     uiOutput('Upload_data'),
+                     uiOutput('upload_data'),
                      br(), br(), br()
                    ),
                    mainPanel(
@@ -64,9 +64,7 @@ shinyUI(
                h5('Time from infection to diagnosis (TID), under three scenarios:',textOutput("label3")),
                em('1. Base Case'), div('Missing testing history data are considered missing at random and are excluded from calculating the TID. The probability of infection is uniformly distributed between the time of last negative test and time of diagnosis.'),
                br(),
-               em('2. Worst Case (Obs)'), div('Missing testing history data are considered missing at random and are excluded from calculating the TID. Infection is assumed to occur immediately following the date of last negative test, a worst case assumption.'),
-               br(),
-               em('3. Worst Case (Miss)'), div('Missing testing history data are imputed using the assumption that infection occurred either 18 years prior to diagnosis or at age 16, whichever is more recent. For cases with testing history, infection is assumed to occur immediately following the date of last negative test.'),
+               em('2. Upper Bound'), div('Missing testing history data are considered missing at random and are excluded from calculating the TID. Infection is assumed to occur immediately following the date of last negative test, a worst case assumption.'),
                br(),
                plotOutput('tid_plot')
              ),

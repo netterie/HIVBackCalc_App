@@ -179,7 +179,8 @@ output$label4<-renderText({datalabel()})
   ################################################## 
   output$tid_plot <- renderPlot({
       dataf <- dataf()
-      fig1combined(dataf, legendposition='right')
+      #fig1combined(dataf, legendposition='right') - Removing Worst Case (Miss)
+      fig1(dataf$infPeriod)
   })
 
   ################################################## 
@@ -213,39 +214,56 @@ output$label4<-renderText({datalabel()})
                            intervalLength=0.25, 
                            printProgress=FALSE) 
 
-        incProgress(detail='50% complete...')
+        # The following if (impute) statements are used to remove
+        # the Worst Case (Miss) scenario
+        impute=FALSE
+        
+        if (impute) {
 
-        all_impute <- runBackCalc(TID=dataf$infPeriod, 
-                           impute=TRUE,
-                           age=dataf$hdx_age,
-                           diagnosedCounts=allCounts,
-                           upperBound=FALSE, 
-                           runBoth=TRUE,
-                           intervalLength=0.25, 
-                           printProgress=FALSE) 
+            incProgress(detail='50% complete...')
+
+            all_impute <- runBackCalc(TID=dataf$infPeriod, 
+                               impute=TRUE,
+                               age=dataf$hdx_age,
+                               diagnosedCounts=allCounts,
+                               upperBound=FALSE, 
+                               runBoth=TRUE,
+                               intervalLength=0.25, 
+                               printProgress=FALSE) 
+        }
 
         summaries_noimpute <- summarize_runBackCalc(results=all_noimpute,
                                            diagnosedCounts=allCounts,
                                            times=allTimes)
 
-        summaries_impute <- summarize_runBackCalc(results=all_impute,
-                                           diagnosedCounts=allCounts,
-                                           times=allTimes)
+        if (impute) {
+            summaries_impute <- summarize_runBackCalc(results=all_impute,
+                                               diagnosedCounts=allCounts,
+                                               times=allTimes)
+        }
 
-        summaries_both <- summarize_runBackCalc_combined(
-                                    results=list(noimpute=all_noimpute, 
-                                                 impute=all_impute), 
-                                    diagnosedCounts=allCounts,
-                                    times=allTimes)
+        if (impute) {
+            summaries_both <- summarize_runBackCalc_combined(
+                                        results=list(noimpute=all_noimpute, 
+                                                     impute=all_impute), 
+                                        diagnosedCounts=allCounts,
+                                        times=allTimes)
+        } else summaries_both <- summaries_noimpute
 
-        stats = data.frame(imputed=c(rep('Yes',
-                                         nrow(summaries_impute[['stats']])),
-                                     rep('No',
-                                         nrow(summaries_noimpute[['stats']]))),
-                           rbind(summaries_impute[['stats']],
-                                 summaries_noimpute[['stats']]))
+        if (impute) {
+            stats = data.frame(imputed=c(rep('Yes',
+                                             nrow(summaries_impute[['stats']])),
+                                         rep('No',
+                                             nrow(summaries_noimpute[['stats']]))),
+                               rbind(summaries_impute[['stats']],
+                                     summaries_noimpute[['stats']]))
 
-        stats <- format_stats(stats)
+            stats <- format_stats(stats)
+        } else {
+            stats <- summaries_noimpute[['stats']]
+            colnames(stats)[1] <- 'Measure'
+        }
+
 
         return(list(summaries_both=summaries_both, stats=stats))
 
