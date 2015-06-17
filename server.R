@@ -274,14 +274,23 @@ output$label4<-renderText({datalabel()})
   ################################################## 
   # PLOT BACKCALCULATION RESULTS
   ################################################## 
-  output$results_plot <- renderPlot({
+  output$results_plot1 <- renderPlot({
+    
+    # Don't display if backcalculation wasn't started
+    if (input$go == 0) return()
+    
+    # Goal is to plot summaries_both object from run_main.R
+    results <- results()
+    results[['summaries_both']]$plotAll
+  })
+  output$results_plot2 <- renderPlot({
 
      # Don't display if backcalculation wasn't started
      if (input$go == 0) return()
 
      # Goal is to plot summaries_both object from run_main.R
      results <- results()
-     results[['summaries_both']] 
+     results[['summaries_both']]$plotUndiag
   })
 
   ################################################## 

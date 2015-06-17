@@ -89,11 +89,12 @@ shinyUI(
                         quarter-year.'),
                      br(),
                      br(),
-                     p('The plot below shows the reported diagnoses over time with
+                     p('The plots below shows the reported diagnoses over time with
                        the estimated incidence counts for each of the three TID cases 
                        (top panel). The bottom panel shows the estimated undiagnosed
                        counts over time for each of the three TID cases.'),
-                     plotOutput('results_plot'),
+                     plotOutput('results_plot1'),
+                     plotOutput('results_plot2'),
                      p('The table below summarizes reported diagnoses, estimated 
                        incidence for the three TID cases, and estimated undiagnosed
                        counts for the three TID cases across all time periods'),
