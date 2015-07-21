@@ -205,7 +205,7 @@ output$label4<-renderText({datalabel()})
     allCounts[names(allCounts)%in%names(obsCounts)] <- obsCounts
 
     ##### RUN BACKCALCULATION
-    withProgress(message = 'Calculating, please wait', value=0, {
+    #withProgress(message = 'Calculating, please wait', value=0, {
 
         all_noimpute <- runBackCalc(TID=dataf$infPeriod, 
                            impute=FALSE,
@@ -222,7 +222,7 @@ output$label4<-renderText({datalabel()})
         
         if (impute) {
 
-            incProgress(detail='50% complete...')
+            #incProgress(detail='50% complete...')
 
             all_impute <- runBackCalc(TID=dataf$infPeriod, 
                                impute=TRUE,
@@ -269,7 +269,7 @@ output$label4<-renderText({datalabel()})
 
         return(list(summaries_both=summaries_both, stats=stats))
 
-    }) # end withProgress
+    #}) # end withProgress
 
   }) # end reactive
 

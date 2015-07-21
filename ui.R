@@ -3,8 +3,6 @@ library(shiny)
 
 shinyUI(
   navbarPage('HIV Undiagnosed',
-  
-
              tabPanel('Load Data',
              
                  sidebarLayout(
@@ -80,7 +78,10 @@ shinyUI(
                      # location for the progress bar. Thanks to:
                      # https://groups.google.com/forum/#!topic/shiny-discuss/VzGkfPqLWkY 
                      # and https://github.com/johndharrison/Seed
-                     tags$link(rel='stylesheet', type='text/css', href='styles.css'),
+                     tags$head(
+                        tags$link(rel='stylesheet', type='text/css', href='styles.css'),
+                        tags$script(type="text/javascript", src="busy.js")
+                     ),
                      # Update 1/7/15: commented out in order to get withProgress() built into Shiny 0.10.2 to work
                      # Update 7/21/15: uncommented to try out with withProgress() 
                             
@@ -94,6 +95,12 @@ shinyUI(
                        the estimated incidence counts for the two TID cases 
                        (top panel). The bottom panel shows the estimated undiagnosed
                        counts over time for the two TID cases.'),
+                       
+                        div(class = "busy",
+                                 p("Calculation in progress..."),
+                                      img(src="ajax-loader.gif")
+                                     ),
+
                      plotOutput('results_plot1'),
                      plotOutput('results_plot2'),
                      p('The table below summarizes reported diagnoses, estimated 
