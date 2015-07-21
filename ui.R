@@ -2,7 +2,11 @@
 library(shiny)
 
 shinyUI(
-  navbarPage('HIV Undiagnosed',
+  navbarPage('HIVBackCalc',
+            tabPanel('Welcome',
+                     p('Welcome to the Rshiny app for the HIVBackCalc R package! HIVBackCalc is a tool for the estimation of HIV incidence and undiagnosed cases. This app allows users to apply the methodology through this interactive interface.'),
+                     p('Access our R package through Github', a('here.', href='https://github.com/hivbackcalc/package1.0/wiki')),
+                     p('For methodological details see', a('Fellows IE, Morris M, Birnbaum JK, Dombrowski JC, Buskin S, Bennett A, et al. A New Method for Estimating the Number of Undiagnosed HIV Infected Based on HIV Testing History, with an Application to Men Who Have Sex with Men in Seattle/King County, WA. PLoS ONE. 2015 Jul 21;10(7):e0129551.', href='http://journals.plos.org/plosone/article?id=10.1371/journal.pone.0129551'))),
              tabPanel('Load Data',
              
                  sidebarLayout(
@@ -112,16 +116,8 @@ shinyUI(
              ),
 
             tabPanel('Help',
-                     p('Please view our', a('instruction manual', href='https://rawgit.com/netterie/HIVBackCalc_App/master/Instruction%20Manual/Instruction_Manual_2.html'), 'for a guided tutorial of this app.')
-            ),
-            tabPanel('About',p('HIVBackCalc is a tool for the estimation of HIV incidence and undiagnosed cases. The method combines data on the number of diagnoses 
-                               per quarter with information on the distribution of the time between HIV infection and diagnosis, or TID. These two elements are used 
-                               to back-calculate the number of incident cases per quarter that must have occurred in order to produce the observed number of diagnoses. 
-                               The number of undiagnosed cases per quarter are those cases who are estimated to have already been infected but not yet diagnosed in a 
-                               given quarter. Because TID is not directly observed, the method uses the time between last negative HIV test and diagnosis to approximate TID.'),
-                     br(),p('HIVBackCalc is based on the work of Ian E. Fellows, Martina Morris, Julia Dombrowski, Susan Buskin, Amy Bennett, Matthew R. Golden.'),
-                     br(),p('For further information see "A new method for estimating the number of undiagnosed HIV infected based on HIV testing history, with an 
-                            application to men who have sex with men in Seattle/King County, WA" in press.'))
+                     p('Please view our', a('instruction manual', href='https://rawgit.com/netterie/HIVBackCalc_App/master/Instruction%20Manual/Instruction_Manual_2.html'), 'for a guided tutorial.')
+            )
              )
 )
 
