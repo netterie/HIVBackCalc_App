@@ -33,7 +33,7 @@ shinyUI(
                              p('You may select a subgroup to analyze rather than using your entire sample - (comparisons of subgroups is not currently implemented). When you are done, or if you do not wish to analyze a subgroup, use the tabs at the top of the app to proceed to the "Examine Data" section.'),
                              uiOutput('svars_chosen'),
                              uiOutput('svars_values'),
-                             p('Note: if you wish to analyze your full sample, click on the variable selector and use your backspace key to clear the subgroup variable selection.'),
+                             p('Note: if you wish to analyze your full sample, choose "All."'),
                              # These line breaks increase the vertical length
                              # of the screen and helps avoid irritating 
                              # scrolling
@@ -61,7 +61,7 @@ shinyUI(
                 )
                 )),
              tabPanel('Calculate TID',
-               h5('Time from infection to diagnosis (TID), under three scenarios:',textOutput("label3")),
+               h5('Time from infection to diagnosis (TID), for two cases:',textOutput("label3")),
                em('1. Base Case'), div('Missing testing history data are considered missing at random and are excluded from calculating the TID. The probability of infection is uniformly distributed between the time of last negative test and time of diagnosis.'),
                br(),
                em('2. Upper Bound'), div('Missing testing history data are considered missing at random and are excluded from calculating the TID. Infection is assumed to occur immediately following the date of last negative test, a worst case assumption.'),
@@ -80,8 +80,9 @@ shinyUI(
                      # location for the progress bar. Thanks to:
                      # https://groups.google.com/forum/#!topic/shiny-discuss/VzGkfPqLWkY 
                      # and https://github.com/johndharrison/Seed
-                     # tags$link(rel='stylesheet', type='text/css', href='styles.css'),
+                     tags$link(rel='stylesheet', type='text/css', href='styles.css'),
                      # Update 1/7/15: commented out in order to get withProgress() built into Shiny 0.10.2 to work
+                     # Update 7/21/15: uncommented to try out with withProgress() 
                             
                      h5('Results'),
                      em('Note: counts refer to the time period for which diagnoses
@@ -90,20 +91,22 @@ shinyUI(
                      br(),
                      br(),
                      p('The plots below shows the reported diagnoses over time with
-                       the estimated incidence counts for each of the three TID cases 
+                       the estimated incidence counts for the two TID cases 
                        (top panel). The bottom panel shows the estimated undiagnosed
-                       counts over time for each of the three TID cases.'),
+                       counts over time for the two TID cases.'),
                      plotOutput('results_plot1'),
                      plotOutput('results_plot2'),
                      p('The table below summarizes reported diagnoses, estimated 
-                       incidence for the three TID cases, and estimated undiagnosed
-                       counts for the three TID cases across all time periods'),
+                       incidence for the two TID cases, and estimated undiagnosed
+                       counts for the two TID cases across all time periods'),
                      tableOutput('results_table')
                   )
                )
              ),
 
-            tabPanel('Help'),
+            tabPanel('Help',
+                     p('Please view our', a('instruction manual', href='https://rawgit.com/netterie/HIVBackCalc_App/master/Instruction%20Manual/Instruction_Manual_2.html'), 'for a guided tutorial of this app.')
+            ),
             tabPanel('About',p('HIVBackCalc is a tool for the estimation of HIV incidence and undiagnosed cases. The method combines data on the number of diagnoses 
                                per quarter with information on the distribution of the time between HIV infection and diagnosis, or TID. These two elements are used 
                                to back-calculate the number of incident cases per quarter that must have occurred in order to produce the observed number of diagnoses. 

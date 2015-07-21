@@ -99,12 +99,14 @@ shinyServer(function(input, output, session) {
   })
 
   output$svars_values <- renderUI({
+      if (!is.null(input$svars_chooser)) {
         if (input$svars_chooser!='' & input$svars_chooser!='All') {
           dataf <- rawdata()
           values <- unique(dataf[,input$svars_chooser])
           selectizeInput('svars_values_chooser', 'Select the subgroup:',
                     choices = values)
         }
+      }
   })
   
 
