@@ -4,7 +4,7 @@ library(shiny)
 shinyUI(
   navbarPage('HIVBackCalc',
             tabPanel('Welcome',
-                     p('Welcome to the Rshiny app for the HIVBackCalc R package! HIVBackCalc is a tool for the estimation of HIV incidence and undiagnosed cases. This app allows users to apply the methodology through this interactive interface.'),
+                     p('Welcome to the Rshiny app for the HIVBackCalc R package! HIVBackCalc is a tool for the estimation of HIV incidence and undiagnosed cases. This app allows users to apply the methodology through an interactive interface.'),
                      p('Access our R package through Github', a('here.', href='https://github.com/hivbackcalc/package1.0/wiki')),
                      p('For methodological details see', a('Fellows IE, Morris M, Birnbaum JK, Dombrowski JC, Buskin S, Bennett A, et al. A New Method for Estimating the Number of Undiagnosed HIV Infected Based on HIV Testing History, with an Application to Men Who Have Sex with Men in Seattle/King County, WA. PLoS ONE. 2015 Jul 21;10(7):e0129551.', href='http://journals.plos.org/plosone/article?id=10.1371/journal.pone.0129551'))),
              tabPanel('Load Data',
