@@ -886,3 +886,341 @@ tryCatch.W.E <- function(expr)
 }
 
 
+#############################################################
+# format_eHARS
+#############################################################
+
+#' Create a data frame of class "testinghistories" that is formatted
+#' for use with HIVBackCalc functions
+#'  
+#' This function formats eHARS person view data extracted via SAS script
+#'  
+#' @param rawdata Unformatted data frame or file path to CSV file
+#' @return Data frame of class "testinghistories" 
+format_eHARS <- function(rawdata) {
+  
+    require(plyr)
+
+    # To delete
+    #rawdata  <- '/Users/jeanette/Dropbox/School/PhD/HIV_WA/data/eHARS_testsubset.csv'
+    
+    # Read in data
+    if (!is.data.frame(rawdata)) {
+        rawdata  <- read.csv(rawdata,
+                             na.strings='',
+                             stringsAsFactors=FALSE)
+    }
+
+    # Helper function to flag records for cleaning
+    recordFlag  <- function(df, logical, message) {
+        # Set NA's in logical to FALSE
+        logical[is.na(logical)] <- FALSE
+        # Create flag variable if it doesn't exist
+        if (!'flag'%in%colnames(df)) df$flag=''
+        # Record flag and tidy up
+        df$flag[logical] <- paste0(df$flag[logical], '; ', message) 
+        df$flag <- gsub('^;', '', df$flag)
+        # Add to assumptions table
+        assumptionsN[assumptionsN$Issue==message,'N'] <<- sum(logical) 
+        return(df)
+    }
+
+    # Construct empty assumptions table
+    assumptionsN <- data.frame(Issue=c('Missing month',
+                                    'Missing day',
+                                    'Illogical last negative',
+                                    'everHadNegTest inconsistent with infPeriod',
+                                    'infPeriod capped at aidsUB',
+                                    'Age <=16 and no infPeriod'),
+                               Assumption=c('Month (diagnosis or last neg test) assumed July for computing infPeriod; diagnosis quarter randomly imputed',
+                                            'Day (diagnosis or last neg test) assumed 15th for computing infPeriod',
+                                            'Last negative date overwritten as missing because recorded as at or after diagnosis',
+                                            'everHadNegTest flag altered to match presence/absence of last neg test date',
+                                            'infPeriod capped at 18 years',
+                                            'Removed from dataset because <=16 yrs and no recorded infPeriod'),
+                               N=NA)
+
+    #############################################################
+    # OVERVIEW: N, expected variables and labels for factors
+    #############################################################
+    dataf <- rawdata
+    colnames(dataf) <- tolower(colnames(dataf))
+    variables_expected <- c('rsh_state_cd',
+                          'aids_dx_dt',
+                          'cd4_first_hiv_dt',
+                          'cd4_first_hiv_type',
+                          'cd4_first_hiv_value',
+                          'hiv_aids_age_yrs',
+                          'hiv_dx_dt',
+                          'race',
+                          'screen_last_neg_dt',
+                          'trans_categ',
+                          'vl_first_det_dt',
+                          'vl_first_det_value',
+                          'birth_sex',
+                          'stateno',
+                          'tth_last_neg_dt',
+                          'tth_first_pos_dt',
+                          'tth_ever_neg')
+    not_in_dataf <- variables_expected[!variables_expected%in%colnames(dataf)]
+    if (length(not_in_dataf)!=0) stop('Some eHARS variables are missing: \n', 
+                                      paste(not_in_dataf,
+                                            collapse='\n'))
+    
+    # Factors and labels
+    races <- c('Hispanic',
+                'American Indian/Alaska Native',
+                'Asian',
+                'Black',
+                'Native Hawaiian/Pacific Islander',
+                'White',
+                'Legacy Asian/Pacific Islander',
+                'Multi-race',
+                'Unknown')
+    modes <- c('Adult MSM', 
+                'Adult IDU',
+                'Adult MSM & IDU',
+                'Adult received clotting factor',
+                'Adult heterosexual contact',
+                'Adult received transfusion/transplant',
+                'Perinatal exposure, HIV diagnosed at age 13 years or older',
+                'Adult with other confirmed risk',
+                'Adult with no identified risk (NIR)',
+                'Adult with no reported risk (NRR)',
+                'Child received clotting factor',
+                'Perinatal exposure',
+                'Child received transfusion/transplant',
+                'Child with other confirmed risk',
+                'Child with no identified risk (NIR)',
+                'Child with no reported risk (NRR)',
+                'Risk factors selected with no age at diagnosis')
+    dataf <- transform(dataf,
+                     new_race=as.character(factor(race, levels=1:9,
+                                     labels=races)),
+                     new_mode=as.character(factor(trans_categ, 
+                                                  levels=c(1:13,18:20,99), 
+                                                  labels=modes)),
+                       stringsAsFactors=FALSE)
+    # Some renaming
+    dataf <- rename(dataf,c('hiv_aids_age_yrs'='hdx_age',
+                              'birth_sex'='sex'))
+    
+
+    #############################################################
+    # SUMMARIZE: Summarize or tabulate variables and store in
+    #            a table
+    #############################################################
+    varsummaries <- vector('list', length=ncol(dataf))
+        names(varsummaries) <- colnames(dataf)
+        for (x in 1:ncol(dataf)) {
+        varname <- colnames(dataf)[x]
+        var = dataf[,x]
+        if (length(unique(var))>25) {
+          if (is.numeric(var)) {
+            sum <- summary(var)            
+            if ("NA's"%in%names(sum)) {
+                nmiss <- sum["NA's"]
+            } else nmiss <- 0
+            sum <- sum[c('Min.', 'Mean', 'Max.')]
+          } else {
+            nmiss <- table(var)[is.na(names(table(var)))]
+            sum <- ''
+          }
+        } else {
+          sum <- table(var, useNA='always')
+          nmiss <- sum[is.na(names(sum))]
+        }
+        nmiss <- as.numeric(nmiss)
+        result <- c(sum, round(100*nmiss/nrow(dataf),2))
+        names(result)[length(result)] <- 'Percent Miss'
+        result <- result[!is.na(names(result))]
+        varsummaries[[x]] <- data.frame(Variable=c(varname, 
+                                                   rep('', length(result)-1)),
+                                        Values=names(result),
+                                        N=result,
+                                        row.names=NULL)
+    }
+    varsummaries <- data.frame(do.call('rbind', varsummaries),
+                               row.names=NULL)
+
+
+    #############################################################
+    # COLLAPSE RACE AND MODE OF DIAGNOSIS
+    #############################################################
+
+    collapsed_race <- c('White', 'Black', 'Hispanic', 'Asian', 
+                        'Native', 'Multi/Other')
+    collapsed_mode <- c('MSM', 'Hetero', 'Blood/Needle/Other')
+    dataf <- within(dataf, {
+        race6 <- as.character(new_race)
+        race6[race6 %in% c("American Indian/Alaska Native", 
+                           "Native Hawaiian/Pacific Islander")] <- 'Native'
+        race6[race6 %in% "Legacy Asian/Pacific Islander"] <- 'Asian'
+        race6[race6 %in% c("Multi-race","Unknown")] <- 'Multi/Other'
+        mode3 <- as.character(new_mode)
+        mode3[mode3 %in% c('Adult MSM','Adult MSM & IDU')] <- 'MSM'
+        mode3[mode3 %in% c('Adult heterosexual contact',
+                           'Adult with no identified risk (NIR)')] <- 'Hetero'
+        mode3[!mode3 %in% c('MSM', 'Hetero')] <- 'Blood/Needle/Other'
+#        race6 <- factor(race6,
+#                       labels=collapsed_race,
+#                       levels=collapsed_race)
+#        mode3 <- factor(mode3,
+#                       levels=collapsed_mode,
+#                       labels=collapsed_mode)
+#        mode2 <- factor(ifelse(mode3 %in% 'MSM', 'MSM', 'non-MSM'))
+         mode2 <- ifelse(mode3 %in% 'MSM', 'MSM', 'non-MSM')
+        # FOR NOW: make the main mode=mode2
+        mode <- mode2
+    })
+
+    #############################################################
+    # DEFINE AGE GROUPS
+    #############################################################
+    dataf <- transform(dataf,
+                     agecat5=cut(hdx_age,
+                                 breaks=c(0,seq(20,70,by=5),85),
+                                 include.lowest=TRUE,
+                                 right=TRUE,
+                                 labels=c('<=20',
+                                          '21-25',
+                                          '26-30',
+                                          '31-35',
+                                          '36-40',
+                                          '41-45',
+                                          '46-50',
+                                          '51-55',
+                                          '56-60',
+                                          '61-65',
+                                          '66-70',
+                                          '71-85')))
+
+    #############################################################
+    # FORMAT DATES AND CREATE INFPERIOD
+    #############################################################
+
+    # Helper function to work with dates
+    # For each date, need a fake date if month and/or day are missing 
+    # plus an imputed quarter if month is missing
+
+    get_dates <- function(timevar) {
+        year <- suppressWarnings(as.numeric(substr(timevar,1,4)))
+        month <- substr(timevar,5,6)
+        day <- substr(timevar,7,8)
+        missing_month <- !is.na(year) & month=='..'
+        missing_day <- !is.na(year) & day=='..' & !month=='..'
+        # Create a year-quarter variable, imputing a quarter if necessary
+        set.seed(98103)
+        yrqtr <- year + 
+            suppressWarnings(ifelse(missing_month, sample(c(0,0.25,0.5,0.75)), 
+                                    floor(as.numeric(month)/4)*0.25))
+        # Create an  _imputed date for calculating inter-test intervals
+        # 15th of the month if only month is known; July 1 if only year known
+        day <- ifelse(missing_month, '01', ifelse(missing_day, '15', day))
+        month <- ifelse(missing_month, '07', month)
+        dateChar <- apply(cbind(year,month,day),1,paste,collapse='-')
+        dateChar[dateChar=='NA-NA-NA'] <- ''
+        dateImp <- as.Date(dateChar,"%Y-%m-%d")
+        return(list(dateImp=dateImp, 
+                    year=year,
+                    yrqtr=yrqtr,
+                    missMonth=missing_month, 
+                    missDay=missing_day))
+    }
+
+    # Diagnosis date
+    dxDate <- get_dates(dataf$hiv_dx_dt)
+    # Last negative test date
+    negDate <- get_dates(dataf$tth_last_neg_dt)
+    dataf <- transform(dataf,
+                       yearDx=dxDate$year,
+                       timeDx=dxDate$yrqtr,
+                       infPeriod=as.numeric(dxDate$dateImp-
+                                            negDate$dateImp)/365,
+                       stringsAsFactors=FALSE)
+    # Record assumptions
+    dataf <- recordFlag(dataf, dxDate$missMonth | negDate$missMonth,
+                        'Missing month')
+    dataf <- recordFlag(dataf, dxDate$missDay | negDate$missDay,
+                        'Missing day')
+
+    # Illogical last negative
+    dataf <- recordFlag(dataf, dataf$infPeriod<=0,
+                        'Illogical last negative')
+    dataf <- within(dataf, {
+                    infPeriod[infPeriod<=0] <- NA
+                       })
+
+
+    #############################################################
+    # CREATE everHadNegTest after creating infPeriod
+    #############################################################
+    # Define everHadNegTest based on tth_ever_neg
+    dataf <- transform(dataf, 
+                     everHadNegTest=ifelse(tth_ever_neg=='Y', TRUE, 
+                                           ifelse(tth_ever_neg=='N', FALSE, NA)))
+    #with(dataf,table(everHadNegTest, tth_ever_neg, useNA='always'))
+
+    # Look at actual infPeriod values by everHadNegTest
+    #ddply(dataf, .(everHadNegTest), function(x) c(summary(x$infPeriod)))
+
+    ## ---- fix_everHadNegTest_toTRUE ----
+    toTRUE1 <- !dataf$everHadNegTest & !is.na(dataf$infPeriod)
+    toTRUE2 <- is.na(dataf$everHadNegTest) & !is.na(dataf$infPeriod)
+    dataf$everHadNegTest[toTRUE1] <- TRUE
+    dataf$everHadNegTest[toTRUE2] <- TRUE
+
+    ## ---- fix_everHadNegTest_toFALSE ----
+    toFALSE <- dataf$everHadNegTest & is.na(dataf$infPeriod)
+    dataf$everHadNegTest[toFALSE] <- FALSE
+
+    # Record assumptions and flag
+    dataf <- recordFlag(dataf, toTRUE1 | toTRUE2 | toFALSE,
+                     'everHadNegTest inconsistent with infPeriod')
+              
+    ## ---- check_everHadNegTest ----
+    #checkEver <- with(dataf,table(everHadNegTest, 
+    #                             TID_NA=is.na(infPeriod), useNA='always')))
+
+    #############################################################
+    # EDIT infPeriod
+    #############################################################
+
+    # Cap at AIDS upper bound of ~18 years
+    aidsUB <- qweibull(.95,shape=2.516,scale=1/0.086) #17.98418
+    infTemp <- dataf$infPeriod
+    dataf <- transform(dataf,
+                       infPeriod=ifelse(everHadNegTest, 
+                                        pmin(infPeriod, aidsUB), 
+                                        ifelse(!everHadNegTest, 
+                                               pmin(hdx_age-16, aidsUB), 
+                                               NA)))
+    dataf <- recordFlag(dataf, infTemp!=dataf$infPeriod,
+                        'infPeriod capped at aidsUB')
+
+    # Remove cases who are too young for the impute-infPeriod assumption
+    dataf <- recordFlag(dataf, 
+                        dataf$hdx_age<=16 & (!dataf$everHadNegTest | 
+                                        is.na(dataf$everHadNegTest)),
+                        message='Age <=16 and no infPeriod')
+    dataf <- subset(dataf, !(hdx_age<=16 & (!everHadNegTest | 
+                                            is.na(everHadNegTest))))
+
+    #############################################################
+    # CREATE infPeriod_imputeNA
+    #############################################################
+    dataf <- within(dataf,{ 
+        infPeriod_imputeNA=ifelse(is.na(everHadNegTest),
+                                  pmin(hdx_age-16, aidsUB),
+                                  infPeriod)
+    })
+
+
+    class(dataf) <- append(class(dataf), 'testinghistories')
+    return(list(data=dataf,
+                assumptions=assumptionsN,
+                rawVarSum=varsummaries))
+}
+
+
+
