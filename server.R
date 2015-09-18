@@ -12,6 +12,7 @@ library(plyr)
 library(xtable)
 source('development/model.R')
 source('development/other.R')
+source('development/debug_fxns.R')
 
 shinyServer(function(input, output, session) {
 
@@ -183,6 +184,208 @@ output$label4<-renderText({datalabel()})
       dataf <- dataf()
       #fig1combined(dataf, legendposition='right') - Removing Worst Case (Miss)
       fig1(dataf$infPeriod)
+  })
+
+  ################################################## 
+  # DEBUG 1: VARIABLE INFO TABLES
+  ################################################## 
+  output$allRecords_table  <- renderTable({
+      dataf <- dataf()
+      datafInfo <- cbind(apply(dataf,2,function(x) sum(is.na(x))),
+                         nrow(dataf))
+      colnames(datafInfo) <- c('Missing', 'N')
+      datafInfo <- transform(datafInfo,
+                             PercMissing=round(100*Missing/N,0))
+  })
+
+  output$numericVar_table  <- renderTable({
+    dataf <- dataf()
+
+    summaries <- lapply(dataf, FUN=summary)
+    numeric <- sapply(summaries, FUN=function(x) "Min."%in%names(x))
+    summaries <- summaries[numeric]
+    summaries <- lapply(summaries, function(x){
+                        if (!"NA's"%in%names(x)) x <- c(x,0)
+                        else x
+                             })
+    table <- do.call('rbind', summaries)
+    colnames(table)[7] <- "NA's"
+    return(table)
+  })
+
+  output$categoricalVar_table <- renderTable({
+    dataf <- dataf()
+
+    summaries <- lapply(dataf, FUN=summary)
+    numeric <- sapply(summaries, FUN=function(x) "Min."%in%names(x))
+    summaries <- summaries[!numeric]
+
+    values <- sapply(names(summaries), function(x) 
+                     paste(unique(dataf[,x]),collapse=','))
+    table <- data.frame(Variable=names(values), 
+                        Values=values,
+                        stringsAsFactors=FALSE)
+  },
+  include.rownames=FALSE,
+  display=c('s', 's', 's'))
+
+  ################################################## 
+  # DEBUG 2: DIAGNOSES
+  ################################################## 
+  diagnoses <- reactive({
+
+    dataf <- dataf()
+    time_min <- min(dataf$timeDx)
+    time_max <- max(dataf$timeDx)
+    allTimes <- seq(time_min, time_max, by=0.25)
+    obsCounts <- table(dataf$timeDx)
+    allCounts <- structure(rep(0,length(allTimes)),
+                           class='table',
+                           names=allTimes)
+    allCounts[names(allCounts)%in%names(obsCounts)] <- obsCounts
+    return(allCounts)
+  })
+
+  output$diagnoses_table <- renderTable({
+    
+    countsTable <- data.frame(Quarter=as.numeric(names(diagnoses())),
+               Diagnoses=c(diagnoses()))
+  },
+  include.rownames=FALSE
+  )
+
+  ################################################## 
+  # DEBUG 3: TID PDF
+  ################################################## 
+  pidList <- reactive({
+
+    # Establish objects
+    dataf <- dataf()
+    allCounts <- diagnoses()
+
+    TID=dataf$infPeriod
+    TID_imputed=dataf$infPeriod
+    age=dataf$hdx_age
+    diagnosedCounts=allCounts
+    intervalLength=0.25
+    estType='base case'
+
+    # TID PDF
+    maxTime <- max(TID, na.rm=TRUE)/0.25 + 1
+    pid <- estimateProbDist(infPeriod=TID_imputed, 
+                            intLength=intervalLength)
+    return(list(pid=pid,maxTime=maxTime))
+  })
+
+  output$TIDPDF_table <- renderTable({
+
+    pdf_dataframe <- data.frame(qtr=0:pidList()$maxTime, 
+                                pdf=pidList()$pid(0:maxTime))
+
+    colnames(pdf_dataframe) <- c('Quarters since infection',
+                                 'Probability of diagnosis')
+
+    round(pdf_dataframe,3)
+  },
+  include.rownames=FALSE,
+  digits=3
+  )
+
+  ################################################## 
+  # DEBUG 4: INCIDENCE
+  ################################################## 
+  allInc <- reactive({
+
+    dataf <- dataf()
+    diagnosedCounts <- diagnoses()
+    pid <- pidList()$pid
+    # Set y = nPrevInt NA's + number of diagnoses per quarter-year to indicate
+    # that we want to backcalculate incidence for 100 time steps prior to 
+    # our data
+    nPrevInt <- 100
+    y <- c(rep(NA,nPrevInt),diagnosedCounts)
+
+    # estimateIncidence parameters
+    gamma=.1
+    tol=10^-4
+
+    # estimateIncidence function with error catching
+      lambda <- rep(mean(y,na.rm=TRUE),length(y))
+      ll <- lambda
+      dev <- Inf
+      while(dev>tol){
+        # Try to estimate
+        trylambda <- tryCatch.W.E(meanEmUpdate(y,pid,lambda,gamma))
+        # Only proceed if there are no errors
+        if(is.null(trylambda$warning)) {
+            lambda <- meanEmUpdate(y,pid,lambda,gamma)
+            dev <- sum((ll-lambda)^2/ll)
+            ll <- lambda
+        } else {
+            # Store lambda
+            problemLambda <- lambda
+            # Record the warning
+            lambda <- trylambda$warning
+            # Set dev=0 so the while loop will end
+            dev=0
+            # Break open the meanEmUpdate function
+            recordProgress <- c('starting meanEmUpdate')
+              T <- length(y)
+              obs <- !is.na(y)
+              a <- b <- c <- lamNew <- rep(NA,T)
+              for(k in 1:length(problemLambda)){
+                s <- 0:(T-k)
+                b[k] <- sum(pid(s))
+                no <- !obs[s+k]
+                if(any(no))
+                  a[k] <- sum(pid(s[no])) / b[k]
+                else
+                  a[k] <- 0
+                c[k] <- 0
+                for(d in s){
+                  if(obs[k+d]){
+                    c[k] <- c[k] + y[k+d]*pid(d) / sum(problemLambda[1:(k+d)]*pid(k+d-(1:(k+d))))
+                  }
+                }
+              }
+              if(gamma > 0){
+                f <- function(ll){
+                  (1/ll) * (a*b+c) * problemLambda - b - 2 * gamma * c(0, ll[2:T] - ll[-T]) - 
+                    2 * gamma * c(ll[1:(T-1)] - ll[-1] ,0)
+                }
+                j <- function(ll){
+                  diag <- (-1/ll^2)* (a*b+c)*problemLambda - 4 * gamma
+                  diag[1] <- diag[1] + 2 * gamma
+                  diag[T] <- diag[T] + 2 * gamma
+                  off <- rep(0,T)
+                  off[2:(T-1)] <- 2*gamma
+                  rbind(-off,diag,off)
+                }
+                recordProgress <- c(recordProgress,
+                                    'finding multiroot')
+                # Run multiroot, which is modified to return some info
+                # rather than an error if it does proceed into the 
+                # error spot. lamNew is now all objects returned by
+                # multiroot, rather than just the $root object
+                lamNew <- multiroot(f=f,start=problemLambda,
+                                    recordProgress=recordProgress,
+                                    positive=TRUE,jacfunc=j,jactype="bandint")
+              }else{
+                lamNew <- problemLambda * (a + c / b)
+              }
+              lambda <- list(tryCatchError=lambda, 
+                             multirootResult=lamNew, 
+                             recordProgress=recordProgress) 
+                }
+      }
+    # Return the typical list returned by estimateIncidence,
+    # but with lambda as a warning message if the estimation
+    # didn't work. 
+      return(list(lambda=lambda,y=y,pid=pid,gamma=gamma,tol=tol))
+  })
+
+  output$printLambda <- renderPrint({
+      allInc()$lambda
   })
 
   ################################################## 

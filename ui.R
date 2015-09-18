@@ -72,6 +72,29 @@ shinyUI(
                br(),
                plotOutput('tid_plot')
              ),
+             tabPanel('Debug Info',
+                tabsetPanel('Debug Tabs',
+                tabPanel('Variable Summaries',
+                   h5('All records'),
+                   tableOutput('allRecords_table'),
+                   h5('Numeric variables'),
+                   tableOutput('numericVar_table'),
+                   h5('Categorical variables'),
+                   tableOutput('categoricalVar_table')
+                ),
+                tabPanel('Diagnoses',
+                    h5('Diagnoses by quarter'),
+                    tableOutput('diagnoses_table')
+                ),
+                tabPanel('TID PDF',
+                    h5('Probability of diagnosis by quarters since infection'),
+                    tableOutput('TIDPDF_table')
+                ),
+                tabPanel('Incidence',
+                    h5('Value of lambda (incidence vector) - may take several minutes to compute:'),
+                    verbatimTextOutput('printLambda')
+                )
+             )),
              tabPanel('Backcalculate Infections',
                sidebarLayout(
                   fluid=FALSE,
