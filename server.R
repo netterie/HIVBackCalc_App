@@ -23,22 +23,23 @@ shinyServer(function(input, output, session) {
   output$upload_data <- renderUI({
       if (input$data_choice=='Upload data') {
         tagList(
-            fileInput('file1', 'Choose CSV File',
-                   accept=c('text/csv', 
-                            'text/comma-separated-values,text/plain', 
-                            '.csv')),
-            tags$hr(),
-            checkboxInput('header', 'Header', TRUE),
+            h5('Specify data features:'),
+            checkboxInput('ehars', 'Is this raw eHARS output?', FALSE),
+            checkboxInput('header', 'First row contains column names', TRUE),
             radioButtons('sep', 'Separator',
                       c(Comma=',',
                         Semicolon=';',
                         Tab='\t'),
-                      ','),
+                      ',', inline=TRUE),
             radioButtons('quote', 'Quote',
                       c(None='',
                         'Double Quote'='"',
                         'Single Quote'="'"),
-                      '"')                 
+                      '"', inline=TRUE),
+            fileInput('file1', 'Choose file',
+                   accept=c('text/csv', 
+                            'text/comma-separated-values,text/plain', 
+                            '.csv'))
         )
       } 
   })
@@ -66,15 +67,18 @@ shinyServer(function(input, output, session) {
                 if (is.null(inFile))
                   return(NULL)
                 
-                read.csv(inFile$datapath, header=input$header, sep=input$sep, 
-                         quote=input$quote, stringsAsFactors=FALSE)
+                rawdata <- read.csv(inFile$datapath, header=input$header, 
+                                   sep=input$sep, 
+                                   quote=input$quote, stringsAsFactors=FALSE)
+                if (input$ehars) rawdata <- format_eHARS(rawdata)$data
              },
              'MSM in King County, WA (simulated)' = {
-                 read.csv('./development/data_KC_sim.csv', 
-                          header=TRUE,
-                          stringsAsFactors=FALSE)
+                 rawdata <- read.csv('./development/data_KC_sim.csv', 
+                                    header=TRUE, 
+                                    stringsAsFactors=FALSE)
              }
       )
+      return(rawdata)
   })
 
   output$data_10rows <- renderTable({
@@ -271,7 +275,7 @@ output$label4<-renderText({datalabel()})
     estType='base case'
 
     # TID PDF
-    maxTime <- max(TID, na.rm=TRUE)/0.25 + 1
+    maxTime <- ceiling(max(TID, na.rm=TRUE)/0.25) + 1
     pid <- estimateProbDist(infPeriod=TID_imputed, 
                             intLength=intervalLength)
     return(list(pid=pid,maxTime=maxTime))
