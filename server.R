@@ -2,17 +2,14 @@
 # setting this option. Here we'll raise limit to 9MB.
 options(shiny.maxRequestSize = 9*1024^2)
 
-# Source code (eventually load a package)
-library(rootSolve)
-library(ggplot2)
-library(reshape)
-library(Hmisc)
-library(scales)
-library(plyr)
-library(xtable)
-source('development/model.R')
+# Source code
 source('development/other.R')
-source('development/debug_fxns.R')
+library(HIVBackCalc)
+library(reshape2)
+#library(reshape)
+#library(Hmisc)
+#library(scales)
+library(xtable)
 
 shinyServer(function(input, output, session) {
 
@@ -90,54 +87,256 @@ shinyServer(function(input, output, session) {
   })
   
   ################################################## 
-  # SELECT SUBSET 
+  # CHECK DATA
+  ################################################## 
+
+    checkData <- reactive({
+        return(check_data(formattedData()))
+    })
+
+    output$checkYearsWoutTH <- renderPrint({
+        print(checkData()[["Years with sparse diagnoses"]])
+        print(checkData()[["Years without testing histories"]])
+    })
+    output$checkEverHadNegTest <-  renderPrint({
+        print(checkData()[["everHadNegTest levels"]])
+    })
+    output$checkAssumptionNo <- renderPrint({
+        print(checkData()[["Assumption for everHadNegTest=FALSE"]])
+    })
+    output$checkMaxInfPeriod <- renderPrint({
+        print(checkData()[["Maximum infPeriod"]])
+    })
+
+  ################################################## 
+  # FORMAT DATA (beyond format_eHARS())
+  ################################################## 
+
+    # Format formattedData upon click of the format button
+    # This allows the button to be clicked more than once, with 
+    # a new formatting choice selected and applied
+    formattedDataList <- reactive({
+        if (input$applyFormatting==0) {
+            return(list(data=rawdata(),
+                        rawdata=rawdata()))
+        } else {
+            isolate({
+                fdataList <- format_data(rawdata(), eHARS=FALSE,
+                                     assumptionNo=input$assumptionNoChoice)
+                return(fdataList)
+            })
+        }
+    })
+
+    # Reset status: check raw data dimensions against pre-formatted data
+    resetFormattedData <- reactive({
+        # Same number of rows
+        sameN <- nrow(rawdata())==nrow(formattedDataList()$rawdata)
+        # Same original columns (this is less meaningful)
+        sameP <- sum(colnames(rawdata())%in%
+                     colnames(formattedDataList()$rawdata))==ncol(rawdata())
+        reset <- ifelse(sameN & sameP, FALSE, TRUE)
+        return(reset)
+    })
+    
+    
+    # Either return the raw data or, if the formatting 
+    # button was clicked, the formatted data
+    formattedData <- reactive({
+        if (input$applyFormatting==0 | resetFormattedData()) {
+            return(rawdata())
+        } else return(formattedDataList()$data)
+    })
+
+    # Download of formatted data: works as long as data
+    # have NOT just been reset with a new dataset
+      output$downloadFormattedData <- downloadHandler( 
+        filename=function() {
+            validate(need(!is.null(formattedData()),
+                     'Results not ready'))
+            'testingHistories_formatted.csv'
+        },
+        content = function(file) { 
+            write.csv(formattedData(), file) 
+        }
+      )
+
+    # Summary of numeric variables in the raw data,
+    # compiled during formatting
+    output$formattingNumeric <- renderTable({
+      if (input$applyFormatting!=0 & !resetFormattedData()) {
+          return(formattedDataList()$rawVarSum$Numeric)
+      } else return(NULL)
+    },
+     caption='Summary of numeric variables in the data, pre-formatting',
+     label='tab:format2',
+     digits=0,
+    caption.placement='top',
+    include.rownames=TRUE,
+    size='small'
+    )
+
+    output$formattingCategorical <- renderTable({
+      if (input$applyFormatting!=0 & !resetFormattedData()) {
+          return(formattedDataList()$rawVarSum$Categorical)
+      } else return(NULL)
+    },
+     caption='Summary of non-numeric variables in the data, pre-formatting. The display of values is truncated after 25 unique values.',
+     label='tab:format2',
+     digits=0,
+    caption.placement='top',
+    include.rownames=FALSE,
+    size='small'
+    )
+
+    # Table of formatting choices applied to the data
+    output$formattingResults <- renderTable({
+      if (input$applyFormatting!=0 & !resetFormattedData()) {
+          return(formattedDataList()$assumptions) 
+      } else return(NULL)
+    },
+     caption='Formatting assumptions applied to the data, in addition to the assumption selected for those with no testing history. Missing month/day and illogical last negative are relevant only when the input data are raw eHARS data.',
+     label='tab:format1',
+     digits=0,
+    caption.placement='top',
+    include.rownames=FALSE,
+    size='small'
+    )
+
+  ################################################## 
+  # SELECT SUBSET
   ################################################## 
   # Access as dataf()
   
+  # Years
+  output$years_chosen <- renderUI({
+      years <- floor(formattedData()$timeDx)
+      sliderInput('selectedYears', 'Select Years:',
+                  min=min(years), max=max(years),
+                  value=c(min(years), max(years)),
+                  step=1,
+                  sep='')
+  })
+
+  # Other groups
   output$svars_chosen <- renderUI({
 
-      svar_options <- colnames(rawdata())
-      selectizeInput('svars_chooser', 'Select the variable that defines your subgroups:',
+      svar_options <- colnames(formattedData())
+      selectizeInput('svars_chooser', 
+                     'Select the variable that defines your subgroups:',
                     choices = c('All',svar_options),
                     options = list(placeholder = 'Select a variable below',
                                    onInitialize = I('function() { this.setValue(""); }')))
   })
 
-  output$svars_values <- renderUI({
-      if (!is.null(input$svars_chooser)) {
-        if (input$svars_chooser!='' & input$svars_chooser!='All') {
-          dataf <- rawdata()
-          values <- unique(dataf[,input$svars_chooser])
-          selectizeInput('svars_values_chooser', 'Select the subgroup:',
-                    choices = values)
-        }
+      output$svars_values <- renderUI({
+          if (!is.null(input$svars_chooser)) {
+            if (input$svars_chooser!='' & input$svars_chooser!='All') {
+              dataf <- formattedData()
+              values <- unique(dataf[,input$svars_chooser])
+              selectizeInput('svars_values_chooser', 'Select the subgroup:',
+                        choices = values)
+            }
+          }
+      })
+      
+
+      dataf <- reactive({
+          # Subgroups
+          if (is.null(input$svars_chooser)){ 
+              dataf<-formattedData()
+          } else if ((input$svars_chooser=='') | (input$svars_chooser=='All')) {
+              dataf <- formattedData()
+          } else {
+              subset <- formattedData()[,input$svars_chooser]==input$svars_values_chooser
+              dataf <- formattedData()[subset,]
+          } 
+          # Years
+          if (!is.null(input$selectedYears)) {
+              dataf <- subset(dataf,timeDx>=input$selectedYears[1] &
+                                    timeDx<(input$selectedYears[2]+1))
+          }
+          return(dataf)
+      })
+
+    datalabel<-reactive({
+      if (is.null(input$svars_chooser)) label<-("Subgroup = No Subgroup")
+      else if (input$svars_chooser=="") label<-("Subgroup = No Subgroup")
+      else if (input$svars_chooser=="All") label<-("Subgroup = No Subgroup")
+      else label <-c("Subgroup = ", input$svars_values_chooser)
+    })
+
+    output$label1<-renderText({datalabel()})
+    output$label2<-renderText({datalabel()})
+    output$label3<-renderText({datalabel()})
+    output$label4<-renderText({datalabel()})
+
+  ################################################## 
+  # LOAD PLWH
+  ################################################## 
+  output$upload_plwh <- renderUI({
+      if (input$data_choice=='Upload data') {
+        tagList(
+            h5('Upload PLWH file:'),
+            radioButtons('sep', 'Separator',
+                      c(Comma=',',
+                        Semicolon=';',
+                        Tab='\t'),
+                      ',', inline=TRUE),
+            radioButtons('quote', 'Quote',
+                      c(None='',
+                        'Double Quote'='"',
+                        'Single Quote'="'"),
+                      '"', inline=TRUE),
+            fileInput('filePLWH', 'Choose file',
+                   accept=c('text/csv', 
+                            'text/comma-separated-values,text/plain', 
+                            '.csv'))
+        )
       }
   })
-  
 
-  dataf <- reactive({
-      if (is.null(input$svars_chooser)){ dataf<-rawdata()} 
-			else if
-	((input$svars_chooser=='') | (input$svars_chooser=='All')){
-		dataf <- rawdata()}
-		else {
-          subset <- rawdata()[,input$svars_chooser]==input$svars_values_chooser
-          dataf <- rawdata()[subset,]
-      } 
+  plwh <- reactive({
+
+      # Note that stringsAsFactors=FALSE in read.csv to 
+      # to facilitate subgroup selection later.
+
+      switch(input$data_choice,
+             'Upload data' = {
+                # input$file1 will be NULL initially. After the user selects
+                # and uploads a file, it will be a data frame with 'name',
+                # 'size', 'type', and 'datapath' columns. The 'datapath'
+                # column will contain the local filenames where the data can
+                # be found.
+
+                inFile <- input$filePLWH
+                
+                if (is.null(inFile))
+                  return(NULL)
+                
+                plwh <- read.csv(inFile$datapath, header=TRUE,
+                                   sep=input$sep, 
+                                   quote=input$quote, stringsAsFactors=FALSE)
+             },
+             'MSM in King County, WA (simulated)' = {
+                 plwh <- read.csv('./development/plwh_KC.csv', 
+                                    header=TRUE, 
+                                    stringsAsFactors=FALSE)
+             }
+      )
+      if (!is.null(input$selectedYears)) {
+          plwh <- subset(plwh, Year>=input$selectedYears[1] &
+                               Year<(input$selectedYears[2]+1))
+      }
+      return(plwh)
   })
 
-datalabel<-reactive({
-  if (is.null(input$svars_chooser)) label<-("Subgroup = No Subgroup")
-  else if (input$svars_chooser=="") label<-("Subgroup = No Subgroup")
-  else if (input$svars_chooser=="All") label<-("Subgroup = No Subgroup")
-  else label <-c("Subgroup = ", input$svars_values_chooser)
-})
+  output$plwh_view <- renderTable({
 
-output$label1<-renderText({datalabel()})
-output$label2<-renderText({datalabel()})
-output$label3<-renderText({datalabel()})
-output$label4<-renderText({datalabel()})
-
+    data <- plwh()
+    
+    data
+  })
   ################################################## 
   # DESCRIBE SAMPLE
   ################################################## 
@@ -149,9 +348,9 @@ output$label4<-renderText({datalabel()})
                    `Race/Ethnicity`='race', 
                    `Mode of Transmission`='mode')
 
-    everHadNegTest_subgrouptab <- tabulate_everHadNegTest(dataf,
-                                                      variables,
-                                                      supercolumn=TRUE)
+    everHadNegTest_subgrouptab <- tabTestHist(dataf, variables, 
+                                              supercolumn=TRUE,
+                                              fullsample_row=TRUE)
 
   },
      caption='Column % sums to 100 within each characteristic. Availability of testing history data within each subgroup level is shown as row percents of %Yes, %No, and %Missing',
@@ -169,7 +368,11 @@ output$label4<-renderText({datalabel()})
   ################################################## 
   output$diagnoses_plot <- renderPlot({
       dataf <- dataf()
-      plot_qtrDx(dataf)
+      plotDiagnoses(dataf)
+  })
+  output$diagnoses_plot_coord <- renderText({
+      paste0('x=', input$plot_click$x, 
+             '\ny=', input$plot_click$y)
   })
 
   ################################################## 
@@ -177,17 +380,29 @@ output$label4<-renderText({datalabel()})
   ################################################## 
   output$testinghistories_plot <- renderPlot({
       dataf <- dataf()
-      everHadNegTest_time <- tabulate_everHadNegTest(dataf,'yearDx')
-      plot_everHadNegTest(everHadNegTest_time)
+      plotTestHist(dataf)
+  })
+  output$testinghistories_plot_coord <- renderText({
+      paste0('x=', input$plot_click$x, 
+             '\ny=', input$plot_click$y)
   })
 
   ################################################## 
-  # PLOT TID
+  # ESTIMATE AND PLOT TID
   ################################################## 
-  output$tid_plot <- renderPlot({
+  diagInterval = 0.25
+  TIDs <- reactive({
       dataf <- dataf()
-      #fig1combined(dataf, legendposition='right') - Removing Worst Case (Miss)
-      fig1(dataf$infPeriod)
+      return(estimateTID(dataf$infPeriod, intLength=diagInterval))
+  })
+
+  output$tid_plot <- renderPlot({
+    plot(TIDs(), intLength=diagInterval, 
+         cases = c('Base Case', 'Upper Bound'))
+  })
+  output$tid_plot_coord <- renderText({
+      paste0('x=', input$plot_click$x, 
+             '\ny=', input$plot_click$y)
   })
 
   ################################################## 
@@ -261,33 +476,16 @@ output$label4<-renderText({datalabel()})
   ################################################## 
   # DEBUG 3: TID PDF
   ################################################## 
-  pidList <- reactive({
-
-    # Establish objects
-    dataf <- dataf()
-    allCounts <- diagnoses()
-
-    TID=dataf$infPeriod
-    TID_imputed=dataf$infPeriod
-    age=dataf$hdx_age
-    diagnosedCounts=allCounts
-    intervalLength=0.25
-    estType='base case'
-
-    # TID PDF
-    maxTime <- ceiling(max(TID, na.rm=TRUE)/0.25) + 1
-    pid <- estimateProbDist(infPeriod=TID_imputed, 
-                            intLength=intervalLength)
-    return(list(pid=pid,maxTime=maxTime))
-  })
 
   output$TIDPDF_table <- renderTable({
 
-    pdf_dataframe <- data.frame(qtr=0:pidList()$maxTime, 
-                                pdf=pidList()$pid(0:maxTime))
+    pid <- TIDs()$base_case$cdf
+
+    pdf_dataframe <- data.frame(qtr=1:length(pid),
+                                cdf=pid)
 
     colnames(pdf_dataframe) <- c('Quarters since infection',
-                                 'Probability of diagnosis')
+                                 'Cumulative probability of diagnosis')
 
     round(pdf_dataframe,3)
   },
@@ -302,12 +500,24 @@ output$label4<-renderText({datalabel()})
 
     dataf <- dataf()
     diagnosedCounts <- diagnoses()
-    pid <- pidList()$pid
+    pid <- TIDs()$base_case$pdffxn
     # Set y = nPrevInt NA's + number of diagnoses per quarter-year to indicate
     # that we want to backcalculate incidence for 100 time steps prior to 
     # our data
     nPrevInt <- 100
     y <- c(rep(NA,nPrevInt),diagnosedCounts)
+
+    # Error handler
+    tryCatch.W.E <- function(expr) { 
+        W <- NULL
+        w.handler <- function(w) { # warning handler 
+            W <<- w
+            invokeRestart("muffleWarning")
+        }
+        list(value = withCallingHandlers(tryCatch(expr, 
+                                                  error = function(e) e), 
+                                         warning = w.handler), warning = W)
+    }
 
     # estimateIncidence parameters
     gamma=.1
@@ -400,106 +610,132 @@ output$label4<-renderText({datalabel()})
     # needed to get the stats object and summaries_both to work
 
     dataf <- dataf()
+    TIDs <- TIDs()
 
-    ##### DEFINE DIAGNOSED COUNTS PER TIME UNIT (ASSUMED QTR, NOW)
-    time_min <- min(dataf$timeDx)
-    time_max <- max(dataf$timeDx)
-    allTimes <- seq(time_min, time_max, by=0.25)
-    obsCounts <- table(dataf$timeDx)
-    allCounts <- structure(rep(0,length(allTimes)),
-                           class='table',
-                           names=allTimes)
-    allCounts[names(allCounts)%in%names(obsCounts)] <- obsCounts
+    diagCounts = tabulateDiagnoses(dataf, intLength=diagInterval)
+    incidenceBase = estimateIncidence(y=diagCounts,
+                                    pid=TIDs[['base_case']]$pdffxn,
+                                    gamma=0.1,
+                                    verbose=FALSE)
+    incidenceUpper = estimateIncidence(y=diagCounts,
+                                    pid=TIDs[['upper_bound']]$pdffxn,
+                                    gamma=0.1,
+                                    verbose=FALSE)
+    undiagnosedBase <- estimateUndiagnosed(incidenceBase)
+    undiagnosedUpper <- estimateUndiagnosed(incidenceUpper)
+    results <- combineResults(list(`Base Case`=list(incidenceBase,
+                                              undiagnosedBase),
+                               `Upper Bound`=list(incidenceUpper,
+                                                undiagnosedUpper)))
 
-    ##### RUN BACKCALCULATION
-    #withProgress(message = 'Calculating, please wait', value=0, {
-
-        all_noimpute <- runBackCalc(TID=dataf$infPeriod, 
-                           impute=FALSE,
-                           age=dataf$hdx_age,
-                           diagnosedCounts=allCounts,
-                           upperBound=FALSE, 
-                           runBoth=TRUE,
-                           intervalLength=0.25, 
-                           printProgress=FALSE) 
-
-        # The following if (impute) statements are used to remove
-        # the Worst Case (Miss) scenario
-        impute=FALSE
-        
-        if (impute) {
-
-            #incProgress(detail='50% complete...')
-
-            all_impute <- runBackCalc(TID=dataf$infPeriod, 
-                               impute=TRUE,
-                               age=dataf$hdx_age,
-                               diagnosedCounts=allCounts,
-                               upperBound=FALSE, 
-                               runBoth=TRUE,
-                               intervalLength=0.25, 
-                               printProgress=FALSE) 
-        }
-
-        summaries_noimpute <- summarize_runBackCalc(results=all_noimpute,
-                                           diagnosedCounts=allCounts,
-                                           times=allTimes)
-
-        if (impute) {
-            summaries_impute <- summarize_runBackCalc(results=all_impute,
-                                               diagnosedCounts=allCounts,
-                                               times=allTimes)
-        }
-
-        if (impute) {
-            summaries_both <- summarize_runBackCalc_combined(
-                                        results=list(noimpute=all_noimpute, 
-                                                     impute=all_impute), 
-                                        diagnosedCounts=allCounts,
-                                        times=allTimes)
-        } else summaries_both <- summaries_noimpute
-
-        if (impute) {
-            stats = data.frame(imputed=c(rep('Yes',
-                                             nrow(summaries_impute[['stats']])),
-                                         rep('No',
-                                             nrow(summaries_noimpute[['stats']]))),
-                               rbind(summaries_impute[['stats']],
-                                     summaries_noimpute[['stats']]))
-
-            stats <- format_stats(stats)
-        } else {
-            stats <- summaries_noimpute[['stats']]
-            colnames(stats)[1] <- 'Measure'
-        }
-
-
-        return(list(summaries_both=summaries_both, stats=stats))
-
-    #}) # end withProgress
+    return(results)
 
   }) # end reactive
+
+  #output$calcDone <- reactive({
+  #    return(!is.null(results()))
+  #})
+  #outputOptions(output, 'calcDone', suspendWhenHidden=FALSE)
 
   ################################################## 
   # PLOT BACKCALCULATION RESULTS
   ################################################## 
-  output$results_plot1 <- renderPlot({
+  output$results_plot <- renderPlot({
     
     # Don't display if backcalculation wasn't started
     if (input$go == 0) return()
     
     # Goal is to plot summaries_both object from run_main.R
     results <- results()
-    results[['summaries_both']]$plotAll
+    plot(results)
   })
-  output$results_plot2 <- renderPlot({
+  output$results_plot_coord <- renderText({
+      paste0('x=', input$plot_click$x, 
+             '\ny=', input$plot_click$y)
+  })
 
-     # Don't display if backcalculation wasn't started
+  ################################################## 
+  # TRUE PREVALENCE
+  ################################################## 
+  trueprev <- reactive({
+     # Don't attempt if backcalculation wasn't started
      if (input$go == 0) return()
 
-     # Goal is to plot summaries_both object from run_main.R
-     results <- results()
-     results[['summaries_both']]$plotUndiag
+     plwh <- plwh()
+
+      if (is.null(plwh)) return(NULL)
+
+      group <- ifelse(is.null(input$svars_chooser), 'Total',
+                      ifelse(input$svars_chooser=='' |
+                             input$svars_chooser=='All', 'Total',
+                             input$svars_values_chooser))
+      if (!group%in%colnames(plwh)) stop('Incorrect column 
+                                         names for PLWh data')
+
+      trueprev <- calcTruePrev(results(), 
+                               plwh[,c('Year', group)])
+
+      # First plot
+      tpMean <- subset(trueprev, 
+                       Estimate!='PLWHA',
+                       select=c('Year', 'Diagnoses/Case',
+                                'Estimate', 'Mean'))
+      tpMean <- melt(tpMean,id.vars=c('Year', 'Estimate', 'Diagnoses/Case'))
+      tpMeanW <- dcast(tpMean, Year+Estimate~`Diagnoses/Case`)
+
+    trueprevplot <- ggplot(tpMeanW,
+                 aes(x=as.factor(Year), y=`Base Case`,
+                     ymin=`Base Case`,
+                     ymax=`Upper Bound`,
+                     colour=Estimate,
+                     fill=Estimate)) +
+          scale_x_discrete(limits=c(as.character(min(tpMeanW$Year):
+                                    max(tpMeanW$Year))), name='') +
+          scale_y_continuous(name='') + 
+          scale_colour_manual(name='', 
+                            values=c('#e0f3db', '#a8ddb5', '#43a2ca')) + 
+          scale_fill_manual(name='', 
+                            values=c('#e0f3db', '#a8ddb5', '#43a2ca')) + 
+          guides(colour=FALSE, fill=FALSE) + 
+          geom_crossbar(width=0.5, position=position_dodge(width=1.05)) +
+          theme_bw() +
+          facet_grid(Estimate~., scales='free_y') # facet_wrap won't work
+
+     # Second plot
+        tp <- subset(trueprev, Estimate=='PLWHA' | Estimate=='Undiagnosed Cases', 
+                     select=c('Year', 'Diagnoses/Case', 'Estimate', 'Mean'))
+        colnames(tp)[which(colnames(tp)=='Diagnoses/Case')] <- 'Case'
+        plwh <- subset(tp, Estimate=='PLWHA')
+        tp2 <- rbind(subset(tp, Estimate!='PLWHA'),
+                     data.frame(subset(plwh, select=c('Year', 'Mean', 'Estimate')),
+                                Case='Base Case'),
+                     data.frame(subset(plwh, select=c('Year', 'Mean', 'Estimate')),
+                                Case='Upper Bound'))
+        tp2$Estimate <- factor(tp2$Estimate, levels=c('PLWHA', 'Undiagnosed Cases'),
+                               labels=c('Diagnosed PLWHA', 'Undiagnosed Cases'))
+        tp2 = arrange(tp2, Year, Estimate)
+
+        tp3 = ddply(tp2, .(Year, Case), transform, Percent = Mean/sum(Mean) * 100)
+
+        tp3 = ddply(tp3, .(Year, Case), transform, pos = (cumsum(Mean) - 0.5 * Mean))
+        tp3$label = paste0(sprintf("%.0f", tp3$Percent), "%")
+
+
+        trueprevplot2 <- ggplot(tp3, 
+                                aes(x = factor(Year), y = Mean, fill = Estimate)) +
+           geom_bar(stat = "identity", width = .7) +
+              geom_text(aes(y = pos, label = label), size = 4) +
+                 coord_flip() + 
+                 facet_grid(.~Case) + theme_bw() + 
+                 scale_x_discrete(name='') + 
+                 scale_y_continuous(name='Number of Cases') + 
+                 scale_fill_manual(name='', values=c('#a8ddb5', '#43a2ca')) + 
+                 theme_bw() + 
+                 theme(legend.position='bottom') +
+                 theme(axis.text = element_text(size = 12))
+
+     return(list(table=trueprev, plot=trueprevplot,
+                 plot2=trueprevplot2))
   })
 
   ################################################## 
@@ -512,7 +748,7 @@ output$label4<-renderText({datalabel()})
 
      # Goal is to plot summaries_both object from run_main.R
      results <- results()
-     results[['stats']]
+     results$resultsSummary
   },
   label='tab:res_main',
   digits=0,
@@ -520,5 +756,45 @@ output$label4<-renderText({datalabel()})
   include.rownames=FALSE
   )
 
+  tableToDownload <- reactive({
+
+     # Don't display if backcalculation wasn't started
+     if (input$go == 0) return()
+
+     if (is.null(trueprev())) return(results()$resultsSummaryYear)
+     else return(trueprev()$table)
+  })
+
+  output$downloadResultsByYear <- downloadHandler( 
+    filename=function() {
+        validate(need(!is.null(results()),
+                 'Results not ready'))
+        'resultsByYear.csv'
+    },
+    content = function(file) { 
+        write.csv(tableToDownload(), file) 
+    }
+  )
+
+  output$results_trueprevplot <- renderPlot({
+
+     # Don't display if backcalculation wasn't started
+     if (input$go == 0) return()
+
+      if (!is.null(trueprev())) trueprev()$plot
+      else(NULL)
+  })
+
+  output$results_trueprevplot2 <- renderPlot({
+
+     # Don't display if backcalculation wasn't started
+     if (input$go == 0) return()
+
+      if (!is.null(trueprev())) trueprev()$plot2
+      else(NULL)
+  })
 
 })
+
+
+

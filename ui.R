@@ -32,6 +32,41 @@ shinyUI(
                              p('The first 10 rows are displayed to confirm the successful selection/ upload of your data. Please proceed to the "Subgroup" sub-tab next.'),
                              tableOutput('data_10rows'))
                          ),
+                         tabPanel('Check Formatting',
+                             h5('Presence of testing histories'),
+                             p('Many years of diagnosis data that have very few diagnoses oand/or do not have testing histories may be problematic. In the selected dataset,'),
+                             verbatimTextOutput('checkYearsWoutTH'),
+                             h5('Responses to "Have you ever had a negative test?"'),
+                             p('The allowed responses for this question, coded in the everHadNegTest variable, are TRUE, FALSE or NA. In the selected data,'),
+                             verbatimTextOutput('checkEverHadNegTest'),
+                             h5('Assumption for those with no prior testing history'),
+                             p('The method requires that an assumption be applied to define a potential infection window for those who report never having had a prior testing history, i.e. everHadNegTest=FALSE. The "Age 16" assumption imputes a last negative test date at either age 16 or 18 years prior to diagnosis, whichever is more recent. The "Age 16 midpoint" assumption imputs the last negative test at the midpoint of age 16 and current age or 18 years prior to diagnosis, whichever is more recent. In the selected data,'),
+                             verbatimTextOutput('checkAssumptionNo'),
+                             h5('Maximum infection window'),
+                             p('The method caps the possible infection window at 18 years, given the natural history of HIV/AIDS. In the selected data,'),
+                             verbatimTextOutput('checkMaxInfPeriod'),
+                             h5('Apply formatting/assumptions to data'),
+                             p('Select the desired assumption for those with no prior testing history and press the Format button to apply this assumption to the data. This action will also turn any non-allowed values for the everHadNegTest to NA, cap the maximum infection window at 18 years, and check for inconsistencies between everHadNegTest and infPeriod.'),
+                             radioButtons("assumptionNoChoice", 
+                                          label = h6("Assumption for those with no prior testing history"), 
+                                          choices = list("Age 16" = "age16", 
+                                                         "Age 16 midpoint" = "age16mid"), 
+                                          selected = "age16"),
+                             actionButton('applyFormatting', 'Format Data',
+                                          class="btn-primary"),
+                             br(),
+                             uiOutput('formattingNumeric'),
+                             uiOutput('formattingCategorical'),
+                             uiOutput('formattingResults'),
+                             br(),
+                             downloadButton('downloadFormattedData', 
+                                            'Download formatted data')
+                         ),
+                         tabPanel('Optional: Select Years',
+                             br(),
+                             p('Use the slider to select years of data to include in the analysis. Choose years for which the reporting of diagnoses has been completed and at least some testing history data are available'),
+                             uiOutput('years_chosen')
+                         ),
                          tabPanel('Optional: Subgroups',
                              h5('Optional: Choose a Subgroup'),
                              p('You may select a subgroup to analyze rather than using your entire sample - (comparisons of subgroups is not currently implemented). When you are done, or if you do not wish to analyze a subgroup, use the tabs at the top of the app to proceed to the "Examine Data" section.'),
@@ -43,7 +78,14 @@ shinyUI(
                              # scrolling
                              br(), br(), br(), br(), br(), br(), br(), br(), br()
 
-                         )
+                         ),
+                         tabPanel('Optional: PLWH',
+                            h5('Optional: Upload PLWH Data'),
+                            p('HIVBackCalc estimates undiagnosed case counts. If you wish to estimate the undiagnosed fraction, please upload PLWH data for your area. Include a "Year" colum and a "Total" column indicating the estimate of diagnosed PLWH. Additional columns for subgroups are optional. If included, the subgroup column names must exactly match the coding for the subgroups in the testing history data.'),
+                            p('If the MSM in King County dataset is selected in the left panel, an example PLWH dataset will be displayed below. If you select "Upload Data" on the left, you will see a prompt to upload PLWH below.'),
+                     uiOutput('upload_plwh'),
+                     tableOutput('plwh_view')
+                        )
                      )
                    )
                  )
@@ -56,12 +98,14 @@ shinyUI(
                 ),
                 tabPanel('Diagnoses',
                    h5('Reported number of diagnosed cases over time',textOutput("label1")),
-                   plotOutput('diagnoses_plot')
+                   verbatimTextOutput('diagnoses_plot_coord'),
+                   plotOutput('diagnoses_plot', click='plot_click')
                 ),
                 tabPanel('Testing Histories',
                    h5('Testing history responses over time',textOutput("label2")),
                    p('When asked "Have you ever had a prior negative test?", cases could report "Yes", "No", or not answer the question'),
-                   plotOutput('testinghistories_plot')
+                   verbatimTextOutput('testinghistories_plot_coord'),
+                   plotOutput('testinghistories_plot', click='plot_click')
                 )
                 )),
              tabPanel('Calculate TID',
@@ -70,7 +114,8 @@ shinyUI(
                br(),
                em('2. Upper Bound'), div('Missing testing history data are considered missing at random and are excluded from calculating the TID. Infection is assumed to occur immediately following the date of last negative test, a worst case assumption.'),
                br(),
-               plotOutput('tid_plot')
+               verbatimTextOutput('tid_plot_coord'),
+               plotOutput('tid_plot', click='plot_click')
              ),
              tabPanel('Debug Info',
                 tabsetPanel('Debug Tabs',
@@ -130,12 +175,20 @@ shinyUI(
                                       img(src="ajax-loader.gif")
                                      ),
 
-                     plotOutput('results_plot1'),
-                     plotOutput('results_plot2'),
+                     verbatimTextOutput('results_plot_coord'),
+                     plotOutput('results_plot', click='plot_click'),
                      p('The table below summarizes reported diagnoses, estimated 
                        incidence for the two TID cases, and estimated undiagnosed
-                       counts for the two TID cases across all time periods'),
-                     tableOutput('results_table')
+                       counts for the two TID cases across all time periods. Click 
+                       the download button to save detailed results by year.'),
+                     tableOutput('results_table'),
+                     downloadButton('downloadResultsByYear', 
+                                    'Download results table'),
+                     br(), br(), 
+                     p('If you provided PLWH data, the chart below shows undiagosed counts (top panel) and true prevalence, the sum of undiagnosed counts and the diagnosed PLWH estimates (middle panel). The percent undiagnosed is computed as undiagnosed counts divided by true prevalence (bottom panel). The bars show the ranges between the Base Case and Upper Bound estimates.'),
+                     plotOutput('results_trueprevplot'),
+                     p('The plot displays the same data in an alternate format. For each of the Base Case (left) and Upper Bound (right), the bars show the breakdown of total true PLWH prevalence into diagnosed and undiagnosed cases.'),
+                     plotOutput('results_trueprevplot2')
                   )
                )
              ),
