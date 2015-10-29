@@ -457,6 +457,8 @@ apply_assumptions <- function(dataf, assumption) {
         stop('In apply_assumptions, everHadNegTest variable is not a logical')
     }
 
+    aidsUB <- qweibull(.95,shape=2.516,scale=1/0.086) #17.98418
+
     switch(assumption,
            'age16' = {
 
