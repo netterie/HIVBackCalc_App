@@ -44,9 +44,11 @@ shinyServer(function(input, output, session) {
   ################################################## 
   # LOAD AND DISPLAY DATA
   ################################################## 
-  # Access as rawdata()
+  # rawdataList() is the same as rawdata() unless
+  # input$ehars=TRUE, in which case there is a 
+  # $data element along with formatting report elements
 
-  rawdata <- reactive({
+  rawdataList <- reactive({
 
       # Note that stringsAsFactors=FALSE in read.csv to 
       # to facilitate subgroup selection later.
@@ -64,12 +66,15 @@ shinyServer(function(input, output, session) {
                 if (is.null(inFile))
                   return(NULL)
                 
+                # This will be a data frame
                 rawdata <- read.csv(inFile$datapath, header=input$header, 
                                    sep=input$sep, 
                                    quote=input$quote, stringsAsFactors=FALSE)
-                if (input$ehars) rawdata <- format_eHARS(rawdata)$data
+                # This will be a list
+                if (input$ehars) rawdata <- format_data(rawdata, eHARS=TRUE)
              },
              'MSM in King County, WA (simulated)' = {
+                # This will be a data frame
                  rawdata <- read.csv('./development/data_KC_sim.csv', 
                                     header=TRUE, 
                                     stringsAsFactors=FALSE)
@@ -78,6 +83,16 @@ shinyServer(function(input, output, session) {
       return(rawdata)
   })
 
+  # Extract just the data frame
+  rawdata <- reactive({
+      if (!is.null(rawdataList())) {
+          if (!is.data.frame(rawdataList())) {
+              return(rawdataList()$data)
+          } else return(rawdataList())
+      } else return(NULL)
+  })
+
+  # Display first 10 rows
   output$data_10rows <- renderTable({
 
     data <- rawdata()
@@ -89,6 +104,9 @@ shinyServer(function(input, output, session) {
   ################################################## 
   # CHECK DATA
   ################################################## 
+  # Checks the formattedData() object, which is 
+  # just rawdata() until the Format button is clicked
+  # (see next section)
 
     checkData <- reactive({
         return(check_data(formattedData()))
@@ -116,10 +134,22 @@ shinyServer(function(input, output, session) {
     # This allows the button to be clicked more than once, with 
     # a new formatting choice selected and applied
     formattedDataList <- reactive({
-        if (input$applyFormatting==0) {
+        if (input$applyFormatting==0 & is.data.frame(rawdataList())) {
+            # No button click, no eHARS formatting applied
             return(list(data=rawdata(),
                         rawdata=rawdata()))
+        } else if (input$applyFormatting==0 & !is.data.frame(rawdataList())) {
+            # No button click, eHARS formatting applied
+            # For convenience in resetFormattedData below, don't
+            # store the raw eHARS data in formattedData$rawdata, 
+            # just store the formatted data
+            return(list(data=rawdata(),
+                        rawdata=rawdata(),
+                        assumptions=rawdataList()$assumptions, 
+                        checkEverHad=rawdataList()$checkEverHad,
+                        rawVarSum=rawdataList()$rawVarSum))
         } else {
+            # Button is clicked
             isolate({
                 fdataList <- format_data(rawdata(), eHARS=FALSE,
                                      assumptionNo=input$assumptionNoChoice)
@@ -161,10 +191,14 @@ shinyServer(function(input, output, session) {
         }
       )
 
-    # Summary of numeric variables in the raw data,
-    # compiled during formatting
+    # Summary of variables in the raw data and formatting assumptions,
+    # compiled during formatting. Display if Format button
+    # was clicked or input data were eHARS and 
+    # a new dataset hasn't just been selected
     output$formattingNumeric <- renderTable({
-      if (input$applyFormatting!=0 & !resetFormattedData()) {
+      if ((input$applyFormatting!=0 & !resetFormattedData()) |
+          (input$applyFormatting==0 & !resetFormattedData() & 
+           !is.data.frame(rawdataList()))) {
           return(formattedDataList()$rawVarSum$Numeric)
       } else return(NULL)
     },
@@ -177,7 +211,9 @@ shinyServer(function(input, output, session) {
     )
 
     output$formattingCategorical <- renderTable({
-      if (input$applyFormatting!=0 & !resetFormattedData()) {
+      if ((input$applyFormatting!=0 & !resetFormattedData()) |
+          (input$applyFormatting==0 & !resetFormattedData() & 
+           !is.data.frame(rawdataList()))) {
           return(formattedDataList()$rawVarSum$Categorical)
       } else return(NULL)
     },
@@ -189,7 +225,6 @@ shinyServer(function(input, output, session) {
     size='small'
     )
 
-    # Table of formatting choices applied to the data
     output$formattingResults <- renderTable({
       if (input$applyFormatting!=0 & !resetFormattedData()) {
           return(formattedDataList()$assumptions) 
