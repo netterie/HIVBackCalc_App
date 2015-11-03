@@ -187,7 +187,9 @@ format_data <- function(rawdata,
                      if (length(u)>25) u <- c(u[1:25], '...TRUNCATED')
                      paste(u,collapse=',') 
               })
-    nas <- sapply(names(summaries2), function(x) sum(is.na(dataf[,x])))
+    nas <- sapply(names(summaries2), function(x) {
+                  sum(is.na(dataf[,x]) | dataf[,x]=='')
+              })
     table2 <- data.frame(Variable=names(values), 
                          NAs=nas,
                         Values=values,

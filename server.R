@@ -226,8 +226,10 @@ shinyServer(function(input, output, session) {
     )
 
     output$formattingResults <- renderTable({
-      if (input$applyFormatting!=0 & !resetFormattedData()) {
-          return(formattedDataList()$assumptions) 
+      if ((input$applyFormatting!=0 & !resetFormattedData()) |
+          (input$applyFormatting==0 & !resetFormattedData() & 
+           !is.data.frame(rawdataList()))) {
+          return(formattedDataList()$assumptions)
       } else return(NULL)
     },
      caption='Formatting assumptions applied to the data, in addition to the assumption selected for those with no testing history. Missing month/day and illogical last negative are relevant only when the input data are raw eHARS data.',
