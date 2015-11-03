@@ -45,20 +45,30 @@ format_data <- function(rawdata,
     # Construct empty assumptions table
     assumptionsN <- data.frame(Issue=c('Missing month',
                                     'Missing day',
+                                    'Missing month special case',
+                                    'Missing day special case',
                                     'Illogical last negative',
                                     'everHadNegTest not TRUE, FALSE or NA',
                                     'everHadNegTest inconsistent with infPeriod',
                                     'infPeriod=0',
                                     'infPeriod > aidsUB',
-                                    'Age <=16 and no infPeriod'),
+                                    'Age <=16 and no infPeriod',
+                                    'Missing year',
+                                    'Missing age'
+                                    ),
                                Assumption=c('Month (diagnosis or last neg test) assumed July for computing infPeriod; diagnosis quarter randomly imputed',
                                             'Day (diagnosis or last neg test) assumed 15th for computing infPeriod',
+                                            'Diagnosis and last neg test in same year and diagnosis before July; last neg assumed Jan 1',
+                                            'Diagnosis and last neg test in same month and diagnosis before 15th; last neg day assumed 1st of month',
                                             'Last negative date overwritten as missing because recorded as at or after diagnosis',
                                             'everHadNegTest altered to NA',
                                             'everHadNegTest flag altered to match presence/absence of last neg test date',
                                             'infPeriod=0 changed to NA',
                                             'infPeriod capped at 18 years',
-                                            'Removed from dataset because <=16 yrs and no recorded infPeriod'),
+                                            'Removed from dataset because <=16 yrs and no recorded infPeriod',
+                                            'Removed from dataset because no dx year',
+                                            'Removed from dataset because no age'
+                                            ),
                                N=NA)
 
     #############################################################
@@ -66,8 +76,8 @@ format_data <- function(rawdata,
     #############################################################
     # Also create a person ID
     origNames <- colnames(rawdata) 
-    rawdata$personID <- 1:nrow(rawdata)
-    rawdata <- rawdata[,c('personID', origNames)]
+    rawdata$personid <- 1:nrow(rawdata)
+    rawdata <- rawdata[,c('personid', origNames)]
 
     # Keep formatted data separate from raw data
     dataf <- rawdata
@@ -87,7 +97,7 @@ format_data <- function(rawdata,
                               'vl_first_det_dt',
                               'vl_first_det_value',
                               'birth_sex',
-                              'stateno',
+#                              'stateno',
                               'tth_last_neg_dt',
                               'tth_first_pos_dt',
                               'tth_ever_neg')
@@ -177,7 +187,9 @@ format_data <- function(rawdata,
                      if (length(u)>25) u <- c(u[1:25], '...TRUNCATED')
                      paste(u,collapse=',') 
               })
+    nas <- sapply(names(summaries2), function(x) sum(is.na(dataf[,x])))
     table2 <- data.frame(Variable=names(values), 
+                         NAs=nas,
                         Values=values,
                         stringsAsFactors=FALSE)
 
@@ -219,7 +231,7 @@ format_data <- function(rawdata,
     #############################################################
     dataf <- transform(dataf,
                      agecat5=cut(hdx_age,
-                                 breaks=c(0,seq(20,70,by=5),85),
+                                 breaks=c(0,seq(20,70,by=5),100),
                                  include.lowest=TRUE,
                                  right=TRUE,
                                  labels=c('<=20',
@@ -233,7 +245,11 @@ format_data <- function(rawdata,
                                           '56-60',
                                           '61-65',
                                           '66-70',
-                                          '71-85')))
+                                          '71+')))
+
+    # Record missing age
+    dataf <- recordFlag(dataf, is.na(dataf$hdx_age),
+                        'Missing age')
 
     #############################################################
     # FORMAT DATES AND CREATE INFPERIOD
@@ -243,8 +259,12 @@ format_data <- function(rawdata,
         # Helper function to work with dates
         # For each date, need a fake date if month and/or day are missing 
         # plus an imputed quarter if month is missing
+        # If LNT (last negative test) dates, there will be additional
+        # checks against the HIV dx date to ensure that imputed
+        # values don't create illogical LNTs
 
-        get_dates <- function(timevar) {
+        get_dates <- function(timevar, LNT=FALSE) {
+
             year <- suppressWarnings(as.numeric(substr(timevar,1,4)))
             month <- substr(timevar,5,6)
             day <- substr(timevar,7,8)
@@ -254,36 +274,74 @@ format_data <- function(rawdata,
             set.seed(98103)
             yrqtr <- year + 
                 suppressWarnings(ifelse(missing_month, sample(c(0,0.25,0.5,0.75)), 
-                                        floor(as.numeric(month)/4)*0.25))
+                                        floor(as.numeric(month)/3)*0.25))
             # Create an  _imputed date for calculating inter-test intervals
             # 15th of the month if only month is known; July 1 if only year known
             day <- ifelse(missing_month, '01', ifelse(missing_day, '15', day))
             month <- ifelse(missing_month, '07', month)
+
+            if (LNT) {
+                # Edit assumptions for those whom it causes a problem
+                # First, LNT in same month as dx and dx date before 15th:
+                # use 1st of the month not 15th
+                missing_day_1st <- !is.na(dataf$dxTmp) & 
+                                    format(dataf$dxTmp, '%y')==substr(timevar,3,4) & 
+                                    format(dataf$dxTmp, '%m')==month & 
+                                    missing_day & 
+                                    as.numeric(format(dataf$dxTmp, '%d'))<=15
+                day[missing_day_1st] <- '01'
+                # LNT in same year as dx and dx date before July 1: 
+                # use Jan 1
+                missing_month_Jan <- !is.na(dataf$dxTmp) & 
+                                     format(dataf$dxTmp, '%y')==substr(timevar,3,4) & 
+                                     missing_month & 
+                                     as.numeric(format(dataf$dxTmp, '%m'))<=7
+                month[missing_month_Jan] <- '01'
+                day[missing_month_Jan] <- '01'
+            } else {
+                missing_month_Jan <- NULL
+                missing_day_1st <- NULL
+            }
+
             dateChar <- apply(cbind(year,month,day),1,paste,collapse='-')
             dateChar[dateChar=='NA-NA-NA'] <- ''
             dateImp <- as.Date(dateChar,"%Y-%m-%d")
+
             return(list(dateImp=dateImp, 
                         year=year,
                         yrqtr=yrqtr,
                         missMonth=missing_month, 
-                        missDay=missing_day))
+                        missDay=missing_day,
+                        missJan=missing_month_Jan,
+                        miss1st=missing_day_1st))
         }
 
-        # Diagnosis date
+        # Diagnosis date (temporarily attach to dataf)
         dxDate <- get_dates(dataf$hiv_dx_dt)
+        dataf$dxTmp <- dxDate$dateImp
         # Last negative test date
-        negDate <- get_dates(dataf$tth_last_neg_dt)
+        negDate <- get_dates(dataf$tth_last_neg_dt, LNT=TRUE)
         dataf <- transform(dataf,
+                           dxTmp=NULL,
                            yearDx=dxDate$year,
                            timeDx=dxDate$yrqtr,
                            infPeriod=as.numeric(dxDate$dateImp-
                                                 negDate$dateImp)/365,
                            stringsAsFactors=FALSE)
+
         # Record assumptions
         dataf <- recordFlag(dataf, dxDate$missMonth | negDate$missMonth,
                             'Missing month')
         dataf <- recordFlag(dataf, dxDate$missDay | negDate$missDay,
                             'Missing day')
+        dataf <- recordFlag(dataf, negDate$missJan,
+                            'Missing month special case')
+        dataf <- recordFlag(dataf, negDate$miss1st,
+                            'Missing day special case')
+
+        # Missing HIV dx year
+        dataf <- recordFlag(dataf, is.na(dxDate$year),
+                            'Missing year')
 
         # Illogical last negative
         dataf <- recordFlag(dataf, dataf$infPeriod<=0,
@@ -351,9 +409,8 @@ format_data <- function(rawdata,
     # Only do this section if the data have not already been formatted with the
     # assumption for No's
     nos <- subset(dataf, everHadNegTest==FALSE)
-    already_formatted <- ifelse((sum(is.na(nos$infPeriod))!=nrow(nos)),
-                                TRUE, FALSE)
-    
+    already_formatted <- ifelse((sum(is.na(nos$infPeriod))!=0),
+                                FALSE, TRUE)
 
     if (!already_formatted) {
         ## ---- fix_everHadNegTest_toTRUE ----
@@ -376,8 +433,8 @@ format_data <- function(rawdata,
     }
               
     ## ---- check_everHadNegTest ----
-    #checkEver <- with(dataf,table(everHadNegTest, 
-    #                             TID_NA=is.na(infPeriod), useNA='always')))
+ #   checkEver <- with(dataf,table(everHadNegTest, 
+ #                                TID_NA=is.na(infPeriod), useNA='always')))
 
     #############################################################
     # EDIT infPeriod
@@ -438,6 +495,10 @@ format_data <- function(rawdata,
                                   infPeriod)
     })
 
+    #############################################################
+    # Remove cases with missing year and/or age
+    #############################################################
+    dataf <- subset(dataf, !is.na(hdx_age) & !is.na(yearDx))
 
     class(dataf) <- append(class(dataf), 'testinghistories')
     return(list(data=dataf,
