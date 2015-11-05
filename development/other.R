@@ -274,7 +274,6 @@ format_data <- function(rawdata,
             missing_day <- !is.na(year) & day=='..' & !month=='..'
             # Create a year-quarter variable, imputing a quarter if necessary
             set.seed(98103)
-            browser()
             yrqtr <- year + 
                 suppressWarnings(ifelse(missing_month, sample(c(0,0.25,0.5,0.75)), 
                                         ceiling(as.numeric(month)/3)*0.25-0.25))
