@@ -274,9 +274,10 @@ format_data <- function(rawdata,
             missing_day <- !is.na(year) & day=='..' & !month=='..'
             # Create a year-quarter variable, imputing a quarter if necessary
             set.seed(98103)
+            browser()
             yrqtr <- year + 
                 suppressWarnings(ifelse(missing_month, sample(c(0,0.25,0.5,0.75)), 
-                                        floor(as.numeric(month)/3)*0.25))
+                                        ceiling(as.numeric(month)/3)*0.25-0.25))
             # Create an  _imputed date for calculating inter-test intervals
             # 15th of the month if only month is known; July 1 if only year known
             day <- ifelse(missing_month, '01', ifelse(missing_day, '15', day))
