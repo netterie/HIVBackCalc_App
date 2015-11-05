@@ -28,6 +28,7 @@ libname perlib "&perlib";
 
 data ehars;	
 	set perlib.person;
+	where dx_status in ('1' '2' '4' '5') and status_flag in ('A' 'W' 'R') ;
 	keep 
 		stateno				/* unique id */
 		hiv_aids_age_yrs 	/* age at diagnosis in years */
