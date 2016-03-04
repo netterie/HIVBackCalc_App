@@ -412,6 +412,22 @@ shinyServer(function(input, output, session) {
              '\ny=', input$plot_click$y)
   })
 
+  output$dx_samplesize <- renderTable({
+
+    dataf <- dataf()
+    table(dataf$mode2, dataf$timeDx)
+
+  },
+     caption='Diagnoses per time step, by MSM vs non-MSM (if applicable)',
+     label='tab:dxByMSM',
+     digits=0,
+    table.placement='!h',
+    caption.placement='top',
+    include.rownames=TRUE,
+    size='small',
+    sanitize.text.function=function(str) { gsub('(\\.)*Percent(\\.)*', ' \\% ',str); }
+  )
+
   ################################################## 
   # PLOT TESTING HISTORIES
   ################################################## 
@@ -649,23 +665,37 @@ shinyServer(function(input, output, session) {
     dataf <- dataf()
     TIDs <- TIDs()
 
-    diagCounts = tabulateDiagnoses(dataf, intLength=diagInterval)
-    incidenceBase = estimateIncidence(y=diagCounts,
-                                    pid=TIDs[['base_case']]$pdffxn,
-                                    gamma=0.1,
-                                    verbose=FALSE)
-    incidenceUpper = estimateIncidence(y=diagCounts,
-                                    pid=TIDs[['upper_bound']]$pdffxn,
-                                    gamma=0.1,
-                                    verbose=FALSE)
-    undiagnosedBase <- estimateUndiagnosed(incidenceBase)
-    undiagnosedUpper <- estimateUndiagnosed(incidenceUpper)
-    results <- combineResults(list(`Base Case`=list(incidenceBase,
-                                              undiagnosedBase),
-                               `Upper Bound`=list(incidenceUpper,
-                                                undiagnosedUpper)))
+    stratResults <- runSubgroups(testhist=dataf,
+                                 subvar='mode2',
+                                 intLength=0.25)
+    return(stratResults[['Total-stratified']]$results)
 
-    return(results)
+    if (1==0) {
+        allResults <- runBackCalc(testhist=dataf,
+                                  intLength=0.25)
+
+        return(allResults$results)
+    }
+
+    if (1==0) {
+        diagCounts = tabulateDiagnoses(dataf, intLength=diagInterval)
+        incidenceBase = estimateIncidence(y=diagCounts,
+                                        pid=TIDs[['base_case']]$pdffxn,
+                                        gamma=0.1,
+                                        verbose=FALSE)
+        incidenceUpper = estimateIncidence(y=diagCounts,
+                                        pid=TIDs[['upper_bound']]$pdffxn,
+                                        gamma=0.1,
+                                        verbose=FALSE)
+        undiagnosedBase <- estimateUndiagnosed(incidenceBase)
+        undiagnosedUpper <- estimateUndiagnosed(incidenceUpper)
+        results <- combineResults(list(`Base Case`=list(incidenceBase,
+                                                  undiagnosedBase),
+                                   `Upper Bound`=list(incidenceUpper,
+                                                    undiagnosedUpper)))
+
+        return(results)
+    }
 
   }) # end reactive
 

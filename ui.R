@@ -72,7 +72,7 @@ shinyUI(
                              p('You may select a subgroup to analyze rather than using your entire sample - (comparisons of subgroups is not currently implemented). When you are done, or if you do not wish to analyze a subgroup, use the tabs at the top of the app to proceed to the "Examine Data" section.'),
                              uiOutput('svars_chosen'),
                              uiOutput('svars_values'),
-                             p('Note: if you wish to analyze your full sample, choose "All."'),
+                             p('Note: if you wish to analyze your full sample, choose "All." The default procedure for analyzing the whole sample is to stratify by MSM vs non-MSM using the "mode2" variable.'),
                              # These line breaks increase the vertical length
                              # of the screen and helps avoid irritating 
                              # scrolling
@@ -99,7 +99,9 @@ shinyUI(
                 tabPanel('Diagnoses',
                    h5('Reported number of diagnosed cases over time',textOutput("label1")),
                    verbatimTextOutput('diagnoses_plot_coord'),
-                   plotOutput('diagnoses_plot', click='plot_click')
+                   plotOutput('diagnoses_plot', click='plot_click'),
+                   h5('Tabular representation of number of diagnoses, by MSM vs non-MSM'),
+                   tableOutput('dx_samplesize')
                 ),
                 tabPanel('Testing Histories',
                    h5('Testing history responses over time',textOutput("label2")),
