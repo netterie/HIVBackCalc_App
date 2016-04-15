@@ -72,7 +72,8 @@ shinyUI(
                              p('You may select a subgroup to analyze rather than using your entire sample - (comparisons of subgroups is not currently implemented). When you are done, or if you do not wish to analyze a subgroup, use the tabs at the top of the app to proceed to the "Examine Data" section.'),
                              uiOutput('svars_chosen'),
                              uiOutput('svars_values'),
-                             p('Note: if you wish to analyze your full sample, choose "All." The default procedure for analyzing the whole sample is to stratify by MSM vs non-MSM using the "mode2" variable.'),
+                             uiOutput('svars_dispStrat'),
+                             uiOutput('svars_strat'),
                              # These line breaks increase the vertical length
                              # of the screen and helps avoid irritating 
                              # scrolling
@@ -100,7 +101,7 @@ shinyUI(
                    h5('Reported number of diagnosed cases over time',textOutput("label1")),
                    verbatimTextOutput('diagnoses_plot_coord'),
                    plotOutput('diagnoses_plot', click='plot_click'),
-                   h5('Tabular representation of number of diagnoses, by MSM vs non-MSM'),
+                   # h5('Tabular representation of number of diagnoses, by MSM vs non-MSM'),
                    tableOutput('dx_samplesize')
                 ),
                 tabPanel('Testing Histories',
@@ -116,7 +117,7 @@ shinyUI(
                br(),
                em('2. Upper Bound'), div('Missing testing history data are considered missing at random and are excluded from calculating the TID. Infection is assumed to occur immediately following the date of last negative test, a worst case assumption.'),
                br(),
-               verbatimTextOutput('tid_plot_coord'),
+               #verbatimTextOutput('tid_plot_coord'),
                plotOutput('tid_plot', click='plot_click')
              ),
              tabPanel('Debug Info',
@@ -177,7 +178,7 @@ shinyUI(
                                       img(src="ajax-loader.gif")
                                      ),
 
-                     verbatimTextOutput('results_plot_coord'),
+                     # verbatimTextOutput('results_plot_coord'),
                      plotOutput('results_plot', click='plot_click'),
                      p('The table below summarizes reported diagnoses, estimated 
                        incidence for the two TID cases, and estimated undiagnosed

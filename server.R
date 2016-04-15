@@ -256,14 +256,17 @@ shinyServer(function(input, output, session) {
   })
 
   # Other groups
+  # Defaults will be svars_chooser='All' and svars_strat='mode2'
   output$svars_chosen <- renderUI({
 
       svar_options <- colnames(formattedData())
       selectizeInput('svars_chooser', 
                      'Select the variable that defines your subgroups:',
                     choices = c('All',svar_options),
-                    options = list(placeholder = 'Select a variable below',
-                                   onInitialize = I('function() { this.setValue(""); }')))
+                    selected = 'All',
+                    options = list(create=TRUE))
+#                    options = list(placeholder = 'Select a variable below',
+#                                   onInitialize = I('function() { this.setValue(""); }')))
   })
 
       output$svars_values <- renderUI({
@@ -276,7 +279,31 @@ shinyServer(function(input, output, session) {
             }
           }
       })
-      
+
+      output$svars_dispStrat <- renderUI({
+          if (!is.null(input$svars_chooser)) {
+          if (input$svars_chooser=='All') {
+              list(
+                p('Note: if you wish to analyze your full sample, choose "All." The default procedure for analyzing the whole sample is to stratify by MSM vs non-MSM using the "mode2" variable.'),
+              actionButton('changeStrat', 'Change stratification variable'))
+          }
+
+          }
+      })
+
+      output$svars_strat <- renderUI({
+          if (!is.null(input$changeStrat)) {
+          if (input$changeStrat!=0) {
+              isolate(
+              selectizeInput('svars_values_strat', 
+                             'For All, select stratification variable (default is mode2):',
+                             choices = c('None', 'mode2'),
+                             selected='mode2',
+                             options = list(create=TRUE))
+              )
+            }
+          }
+      })
 
       dataf <- reactive({
           # Subgroups
@@ -296,11 +323,27 @@ shinyServer(function(input, output, session) {
           return(dataf)
       })
 
+    subgroupVar <- reactive({
+        ifelse(is.null(input$svars_chooser), 'All', 
+               ifelse(input$svars_chooser=='All', 'All',
+                      input$svars_values_chooser))
+    })
+
+    # For now, stratification is not allowed for subgroups 
+    stratVar <- reactive({
+        ifelse(!is.null(subgroupVar()),
+               ifelse(subgroupVar()=='All',
+                      ifelse(is.null(input$svars_values_strat), 'mode2',
+                             input$svars_values_strat), input$svars_values_strat),
+               'None')
+    })
+
     datalabel<-reactive({
-      if (is.null(input$svars_chooser)) label<-("Subgroup = No Subgroup")
-      else if (input$svars_chooser=="") label<-("Subgroup = No Subgroup")
-      else if (input$svars_chooser=="All") label<-("Subgroup = No Subgroup")
-      else label <-c("Subgroup = ", input$svars_values_chooser)
+        subgrouplab <- paste0('Subgroup = ', subgroupVar())
+        finallab <- paste(subgrouplab,
+                          ifelse(stratVar()=='None', 'No Strata',
+                                 paste('Stratified by', stratVar())),
+                          sep='; ')
     })
 
     output$label1<-renderText({datalabel()})
@@ -414,11 +457,17 @@ shinyServer(function(input, output, session) {
 
   output$dx_samplesize <- renderTable({
 
-    dataf <- dataf()
-    table(dataf$mode2, dataf$timeDx)
+      dataf <- dataf()
+      if (is.null(stratVar())) {
+          table(dataf$timeDx)
+      } else if (stratVar()=='None') {
+          table(dataf$timeDx)
+      } else {
+          table(dataf[,stratVar()], dataf$timeDx)
+      }
 
   },
-     caption='Diagnoses per time step, by MSM vs non-MSM (if applicable)',
+     caption='Diagnoses per time step',
      label='tab:dxByMSM',
      digits=0,
     table.placement='!h',
@@ -665,12 +714,14 @@ shinyServer(function(input, output, session) {
     dataf <- dataf()
     TIDs <- TIDs()
 
-    stratResults <- runSubgroups(testhist=dataf,
-                                 subvar='mode2',
-                                 intLength=0.25)
-    return(stratResults[['Total-stratified']]$results)
-
-    if (1==0) {
+    # Stratified results
+    if (subgroupVar()=='All' & stratVar()!='None') {
+        stratResults <- runSubgroups(testhist=dataf,
+                                     subvar='mode2',
+                                     intLength=0.25)
+        return(stratResults[['Total-stratified']]$results)
+    } else {
+        # Not stratified
         allResults <- runBackCalc(testhist=dataf,
                                   intLength=0.25)
 
