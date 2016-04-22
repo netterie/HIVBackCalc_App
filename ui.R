@@ -40,7 +40,7 @@ shinyUI(
                              p('The allowed responses for this question, coded in the everHadNegTest variable, are TRUE, FALSE or NA. In the selected data,'),
                              verbatimTextOutput('checkEverHadNegTest'),
                              h5('Assumption for those with no prior testing history'),
-                             p('The method requires that an assumption be applied to define a potential infection window for those who report never having had a prior testing history, i.e. everHadNegTest=FALSE. The "Age 16" assumption imputes a last negative test date at either age 16 or 18 years prior to diagnosis, whichever is more recent. The "Age 16 midpoint" assumption imputs the last negative test at the midpoint of age 16 and current age or 18 years prior to diagnosis, whichever is more recent. In the selected data,'),
+                             p('The method requires that an assumption be applied to define a potential infection window for those who report never having had a prior testing history, i.e. everHadNegTest=FALSE. The "Age 16" assumption imputes a last negative test date at either age 16 or 18 years prior to diagnosis, whichever is more recent. In the selected data,'),
                              verbatimTextOutput('checkAssumptionNo'),
                              h5('Maximum infection window'),
                              p('The method caps the possible infection window at 18 years, given the natural history of HIV/AIDS. In the selected data,'),
@@ -56,8 +56,7 @@ shinyUI(
                                             'Download formatted data'),
                              radioButtons("assumptionNoChoice", 
                                           label = h6("Assumption for those with no prior testing history"), 
-                                          choices = list("Age 16" = "age16", 
-                                                         "Age 16 midpoint" = "age16mid"), 
+                                          choices = list("Age 16" = "age16"),
                                           selected = "age16"),
                              actionButton('applyFormatting', 'Format Data',
                                           class="btn-primary")

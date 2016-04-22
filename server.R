@@ -120,7 +120,7 @@ shinyServer(function(input, output, session) {
         print(checkData()[["everHadNegTest levels"]])
     })
     output$checkAssumptionNo <- renderPrint({
-        print(checkData()[["Assumption for everHadNegTest=FALSE"]])
+        print(checkData()[["Assumption for everHadNegTest=FALSE"]][1])
     })
     output$checkMaxInfPeriod <- renderPrint({
         print(checkData()[["Maximum infPeriod"]])
