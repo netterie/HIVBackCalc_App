@@ -111,13 +111,15 @@ shinyUI(
                 )
                 )),
              tabPanel('Calculate TID',
-               h5('Time from infection to diagnosis (TID), for two cases:',textOutput("label3")),
+               h5('Time from infection to diagnosis (TID)',textOutput("label3")),
+               h5('Two Cases:'),
                em('1. Base Case'), div('Missing testing history data are considered missing at random and are excluded from calculating the TID. The probability of infection is uniformly distributed between the time of last negative test and time of diagnosis.'),
                br(),
                em('2. Upper Bound'), div('Missing testing history data are considered missing at random and are excluded from calculating the TID. Infection is assumed to occur immediately following the date of last negative test, a worst case assumption.'),
                br(),
                #verbatimTextOutput('tid_plot_coord'),
-               plotOutput('tid_plot', click='plot_click')
+               plotOutput('tid_plot', click='plot_click'),
+               tableOutput('TIDPDF_table')
              ),
              tabPanel('Debug Info',
                 tabsetPanel('Debug Tabs',
@@ -134,8 +136,8 @@ shinyUI(
                     tableOutput('diagnoses_table')
                 ),
                 tabPanel('TID PDF',
-                    h5('Probability of diagnosis by quarters since infection'),
-                    tableOutput('TIDPDF_table')
+                    h5('Probability of diagnosis by quarters since infection')#,
+              #      tableOutput('TIDPDF_table')
                 ),
                 tabPanel('Incidence',
                     h5('Value of lambda (incidence vector) - may take several minutes to compute:'),
@@ -196,7 +198,7 @@ shinyUI(
              ),
 
             tabPanel('Help',
-                     p('Please view our', a('instruction manual', href='https://rawgit.com/netterie/HIVBackCalc_App/master/Instruction%20Manual/Instruction_Manual_2.html'), 'for a guided tutorial.')
+                     p('Please view our', a('instruction manual', href='https://rawgit.com/hivbackcalc/app/master/manual/app_manual.html'), 'for a guided tutorial.')
             )
              )
 )

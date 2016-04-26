@@ -583,13 +583,16 @@ shinyServer(function(input, output, session) {
 
     pid <- TIDs()$base_case$cdf
 
-    pdf_dataframe <- data.frame(qtr=1:length(pid),
-                                cdf=pid)
+    # Survivor fxn by quarter-year
+    pdf_dataframe <- data.frame(yrs=c(0, 1:length(pid)/4),
+                                surv=c(1, 1-pid))
+    # Focus on half-years, otherwise there's too much info
+    pdf_dataframe <- pdf_dataframe[seq(1,nrow(pdf_dataframe),by=2),]
 
-    colnames(pdf_dataframe) <- c('Quarters since infection',
-                                 'Cumulative probability of diagnosis')
+    colnames(pdf_dataframe) <- c('Years since infection',
+                                 'Fraction remaining undiagnosed')
 
-    round(pdf_dataframe,3)
+    round(pdf_dataframe,2)
   },
   include.rownames=FALSE,
   digits=3
