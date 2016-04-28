@@ -558,7 +558,7 @@ shinyServer(function(input, output, session) {
     dataf <- dataf()
     time_min <- min(dataf$timeDx)
     time_max <- max(dataf$timeDx)
-    allTimes <- seq(time_min, time_max, by=0.25)
+    allTimes <- seq(time_min, time_max, by=diagInterval)
     obsCounts <- table(dataf$timeDx)
     allCounts <- structure(rep(0,length(allTimes)),
                            class='table',
@@ -582,15 +582,18 @@ shinyServer(function(input, output, session) {
   output$TIDPDF_table <- renderTable({
 
     pid <- TIDs()$base_case$cdf
+    pidU <- TIDs()$upper_bound$cdf
 
     # Survivor fxn by quarter-year
     pdf_dataframe <- data.frame(yrs=c(0, 1:length(pid)/4),
-                                surv=c(1, 1-pid))
+                                surv=c(1, 1-pid),
+                                survU=c(1, 1-pidU))
     # Focus on half-years, otherwise there's too much info
     pdf_dataframe <- pdf_dataframe[seq(1,nrow(pdf_dataframe),by=2),]
 
     colnames(pdf_dataframe) <- c('Years since infection',
-                                 'Fraction remaining undiagnosed')
+                                 'Base Case fraction still undiagnosed',
+                                 'Upper Bound fraction still undiagnosed')
 
     round(pdf_dataframe,2)
   },
@@ -721,7 +724,7 @@ shinyServer(function(input, output, session) {
     if (subgroupVar()=='All' & stratVar()!='None') {
         stratResults <- runSubgroups(testhist=dataf,
                                      subvar='mode2',
-                                     intLength=0.25)
+                                     intLength=diagInterval)
         return(stratResults[['Total-stratified']]$results)
     } else {
         # Not stratified
