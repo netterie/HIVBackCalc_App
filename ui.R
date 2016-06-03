@@ -27,10 +27,10 @@ shinyUI(
                    mainPanel(
                      tabsetPanel('Data Panels',
                          tabPanel('Confirm Data',
-					  column(width=7,	
-                             h5('File Contents'),
-                             p('The first 10 rows are displayed to confirm the successful selection/ upload of your data. Please proceed to the "Subgroup" sub-tab next.'),
-                             tableOutput('data_10rows'))
+                              column(width=7,	
+                                     h5('File Contents'),
+                                     p('The first 10 rows are displayed to confirm the successful selection/ upload of your data. Please proceed to the "Subgroup" sub-tab next.'),
+                                     tableOutput('data_10rows'))
                          ),
                          tabPanel('Check Formatting',
                              h5('Presence of testing histories'),
@@ -149,9 +149,34 @@ shinyUI(
                   fluid=FALSE,
                   sidebarPanel(
                      h5('Click to backcalculate infections:',textOutput("label4")),
-                     actionButton('go', label='Run backcalculation')
+                     actionButton('go', label='Run backcalculation'),
+                     h5('Download analysis report'),
+                     radioButtons('format', 'Document format', c('PDF', 'HTML', 'Word'),
+                                                      inline = TRUE),
+                     downloadButton('downloadReport')
                   ),             
                   mainPanel(
+                     tabsetPanel('Data Panels',
+                     tabPanel('Time Step',
+                              h5('Select a time step'),
+                              p('The time step refers to the interval by which diagnosis dates are identified. The time step influences the sample size, as longer time steps will accumulate more diagnoses, as well as the interpretation of results, as it changes the definition of "undiagnosed." For example, 25 diagnoses per quarter = 100 diagnoses per year, and someone who is infected in Q1 but diagnosed in Q4 is undiagnosed for 3 quarters but still diagnosed in the same year in which they were infected. The default time step is a quarter-year (0.25).'),
+                              p('Use the following diagnostics to determine your selection:'),
+                              h6('1. Current time step'),
+                              verbatimTextOutput('selectedtimestep'),
+                              h6('2. Smallest time step allowed by data (see variable timeDx)'),
+                              verbatimTextOutput('datatimestep'),
+                              h6('3. Number of time steps having 0-4, 5-19, 20-49, and 50-999 diagnoses, by selected stratum variable'),
+                              verbatimTextOutput('avgdxbytimestep'),
+                              h5('Time step selection'),
+                              p('WARNING: if you aggregate to a 0.5-year or 1-year step, this can introduce a slight downward bias in early years and upward bias in the most recent 3-5 years, by as much as +/- 10% of cases when compared to the quarterly estimates. This translates into a smaller impact on the undiagnosed fraction. For example, a 10% bias in cases in a population with about 10% undiagnosed represents a X% bias in the undiagnosed fraction.'),
+                              radioButtons("timestepChoice", 
+                                          label = h6("Select a time step"), 
+                                          choices = list("Quarter-Year" = 0.25,
+                                                         "Half-Year" = 0.5,
+                                                         "Year" = 1),
+                                          selected = 0.25)
+                              ),
+                     tabPanel('Results',
                      # This accesses the stylesheet, which just sets a 
                      # location for the progress bar. Thanks to:
                      # https://groups.google.com/forum/#!topic/shiny-discuss/VzGkfPqLWkY 
@@ -194,6 +219,8 @@ shinyUI(
                      p('The plot displays the same data in an alternate format. For each of the Base Case (left) and Upper Bound (right), the bars show the breakdown of total true PLWH prevalence into diagnosed and undiagnosed cases.'),
                      plotOutput('results_trueprevplot2')
                   )
+                  )
+                  ) # end main panel
                )
              ),
 

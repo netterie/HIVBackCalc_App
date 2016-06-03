@@ -282,11 +282,13 @@ shinyServer(function(input, output, session) {
 
       output$svars_dispStrat <- renderUI({
           if (!is.null(input$svars_chooser)) {
-          if (input$svars_chooser=='All') {
+          #Removed the condition that you can only change the stratification
+          #variable if you're analyzing the full sample
+          #if (input$svars_chooser=='All') {
               list(
                 p('Note: if you wish to analyze your full sample, choose "All." The default procedure for analyzing the whole sample is to stratify by MSM vs non-MSM using the "mode2" variable.'),
               actionButton('changeStrat', 'Change stratification variable'))
-          }
+          #}
 
           }
       })
@@ -329,13 +331,9 @@ shinyServer(function(input, output, session) {
                       input$svars_values_chooser))
     })
 
-    # For now, stratification is not allowed for subgroups 
     stratVar <- reactive({
-        ifelse(!is.null(subgroupVar()),
-               ifelse(subgroupVar()=='All',
-                      ifelse(is.null(input$svars_values_strat), 'mode2',
-                             input$svars_values_strat), input$svars_values_strat),
-               'None')
+        ifelse(is.null(input$svars_values_strat), 'mode2', 
+               input$svars_values_strat)
     })
 
     datalabel<-reactive({
@@ -492,14 +490,13 @@ shinyServer(function(input, output, session) {
   ################################################## 
   # ESTIMATE AND PLOT TID
   ################################################## 
-  diagInterval = 0.25
   TIDs <- reactive({
       dataf <- dataf()
-      return(estimateTID(dataf$infPeriod, intLength=diagInterval))
+      return(estimateTID(dataf$infPeriod, intLength=diagInterval()))
   })
 
   output$tid_plot <- renderPlot({
-    plot(TIDs(), intLength=diagInterval, 
+    plot(TIDs(), intLength=diagInterval(), 
          cases = c('Base Case', 'Upper Bound'))
   })
   output$tid_plot_coord <- renderText({
@@ -558,7 +555,7 @@ shinyServer(function(input, output, session) {
     dataf <- dataf()
     time_min <- min(dataf$timeDx)
     time_max <- max(dataf$timeDx)
-    allTimes <- seq(time_min, time_max, by=diagInterval)
+    allTimes <- seq(time_min, time_max, by=diagInterval())
     obsCounts <- table(dataf$timeDx)
     allCounts <- structure(rep(0,length(allTimes)),
                            class='table',
@@ -585,11 +582,14 @@ shinyServer(function(input, output, session) {
     pidU <- TIDs()$upper_bound$cdf
 
     # Survivor fxn by quarter-year
-    pdf_dataframe <- data.frame(yrs=c(0, 1:length(pid)/4),
+    pdf_dataframe <- data.frame(yrs=c(0, seq(diagInterval(),
+                                             by=diagInterval(),
+                                             length.out=length(pid))),
                                 surv=c(1, 1-pid),
                                 survU=c(1, 1-pidU))
-    # Focus on half-years, otherwise there's too much info
-    pdf_dataframe <- pdf_dataframe[seq(1,nrow(pdf_dataframe),by=2),]
+    # Focus on years and half-years, otherwise there's too much info
+    tidtimes <- pdf_dataframe$yrs
+    pdf_dataframe <- pdf_dataframe[round(tidtimes*2)==tidtimes*2,]
 
     colnames(pdf_dataframe) <- c('Years since infection',
                                  'Base Case fraction still undiagnosed',
@@ -711,6 +711,45 @@ shinyServer(function(input, output, session) {
   })
 
   ################################################## 
+  # TIME STEP AND SAMPLE SIZE
+  ################################################## 
+    diagInterval <- reactive({
+        if (is.null(input$timestepChoice)) 0.25 else as.numeric(input$timestepChoice)
+    })
+    output$datatimestep <- renderPrint({
+          dataf <- dataf()
+          times <- sort(unique(dataf$timeDx))
+          median(times[2:length(times)]-times[1:(length(times)-1)])
+    })
+    output$selectedtimestep <- renderPrint({
+        as.numeric(diagInterval())
+    })
+    output$avgdxbytimestep <- renderPrint({
+          dataf <- dataf()
+          diagBreaks <- c(0,5,20,50,999)
+          if (is.null(stratVar())) {
+              diagCounts = tabulateDiagnoses(dataf, intLength=diagInterval())
+              table(cut(diagCounts[!is.na(diagCounts)], 
+                        breaks=diagBreaks,
+                        include.lowest=TRUE,
+                        right=FALSE))
+          } else if (stratVar()=='None') {
+              diagCounts = tabulateDiagnoses(dataf, intLength=diagInterval())
+              table(cut(diagCounts[!is.na(diagCounts)], 
+                        breaks=diagBreaks,
+                        include.lowest=TRUE,
+                        right=FALSE))
+          } else {
+              ddply(dataf, c(stratVar()), .fun=function(x) {
+                    diagCounts = tabulateDiagnoses(x, intLength=diagInterval())
+                    table(cut(diagCounts[!is.na(diagCounts)], 
+                              breaks=diagBreaks,
+                              include.lowest=TRUE, right=FALSE)) 
+                             })
+          }
+    })
+
+  ################################################## 
   # RUN BACKCALCULATION
   ################################################## 
   results <- reactive({
@@ -724,18 +763,18 @@ shinyServer(function(input, output, session) {
     if (subgroupVar()=='All' & stratVar()!='None') {
         stratResults <- runSubgroups(testhist=dataf,
                                      subvar='mode2',
-                                     intLength=diagInterval)
+                                     intLength=diagInterval())
         return(stratResults[['Total-stratified']]$results)
     } else {
         # Not stratified
         allResults <- runBackCalc(testhist=dataf,
-                                  intLength=0.25)
+                                  intLength=diagInterval())
 
         return(allResults$results)
     }
 
     if (1==0) {
-        diagCounts = tabulateDiagnoses(dataf, intLength=diagInterval)
+        diagCounts = tabulateDiagnoses(dataf, intLength=diagInterval())
         incidenceBase = estimateIncidence(y=diagCounts,
                                         pid=TIDs[['base_case']]$pdffxn,
                                         gamma=0.1,
@@ -917,6 +956,33 @@ shinyServer(function(input, output, session) {
       if (!is.null(trueprev())) trueprev()$plot2
       else(NULL)
   })
+
+    # Report
+    # see http://shiny.rstudio.com/gallery/download-knitr-reports.html
+    output$downloadReport <- downloadHandler(
+        filename = function() {
+            validate(need(!is.null(results()),
+                     'Results not ready'))
+            paste('undiagnosed_report', sep = '.', switch(
+            input$format, PDF = 'pdf', HTML = 'html', Word = 'docx'
+            ))
+        },
+        content = function(file) {
+            src <- normalizePath('report.Rmd')
+            # temporarily switch to the temp dir, in case you do not have write
+            # permission to the current working directory
+            owd <- setwd(tempdir())
+            on.exit(setwd(owd))
+            file.copy(src, 'report.Rmd', overwrite=TRUE)
+            library(rmarkdown)
+            out <- render('report.Rmd', switch(
+                input$format,
+                PDF = pdf_document(), HTML = html_document(), Word = word_document()
+            ))
+            file.rename(out, file)
+        }
+    )
+  
 
 })
 

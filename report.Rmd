@@ -1,0 +1,284 @@
+
+```{r, echo=FALSE, include=FALSE}
+### SET OPTIONS
+#It looks like overwrite=TRUE in the file.copy line was necessary
+library(knitr)
+opts_chunk$set(fig.path='figure/minimal-', fig.align='center', 
+               fig.show='hold', concordance=TRUE, external=TRUE,
+               tidy=TRUE, size='footnotesize', verbose=TRUE,
+               purl=TRUE, warning=FALSE, echo=FALSE)
+```
+
+# HIVBackCalc: Analysis Report
+ _`r format(Sys.time(), "%d %B, %Y")`_
+
+
+## Raw Data
+
+### eHARS?
+
+```{r}
+    if (is.null(input$ehars)) {
+        eh <- 'are NOT'
+    } else if (!input$ehars) {
+        eh <- 'are NOT'
+    } else eh <- 'ARE'
+```
+The input data `r eh` raw eHARS data.
+
+### Data preview
+The first 10 rows and 20 or so columns are displayed below.
+
+```{r}
+    ncol <- ncol(rawdata())
+    d1 <- ifelse(ncol>10, 10, ncol)
+    ################################################## 
+    # LOAD AND DISPLAY DATA
+    ################################################## 
+    kable(rawdata()[1:10,1:d1])
+```
+```{r}
+    if (ncol>10) kable(rawdata()[1:10,(d1+1):ncol])
+```
+
+### Data diagnostics 
+```{r}
+    ################################################## 
+    # CHECK DATA
+    ################################################## 
+    checkData()
+```
+
+### Summary of raw data
+
+*Numeric variables*
+```{r}
+    kable(formattedDataList()$rawVarSum$Numeric,
+        caption='Summary of numeric variables in the data, pre-formatting',
+        label='tab:format2',
+        digits=0,
+        caption.placement='top',
+        include.rownames=TRUE,
+    )
+```
+
+*Categorical variables*
+```{r}
+    kable(formattedDataList()$rawVarSum$Categorical,
+        caption='Summary of non-numeric variables in the data, pre-formatting. The display of values is truncated after 25 unique values.',
+        label='tab:format2',
+        digits=0,
+        caption.placement='top',
+        include.rownames=FALSE,
+        size='small'
+        )
+```
+
+### Summary of data formatting
+```{r}
+    ################################################## 
+    # FORMAT DATA
+    ################################################## 
+    kable(formattedDataList()$assumptions[,c(1,3)],
+        caption='Formatting assumptions applied to the data, in addition to the assumption selected for those with no testing history. Missing month/day and illogical last negative are relevant only when the input data are raw eHARS data.',
+        label='tab:format1',
+        digits=0,
+        caption.placement='top',
+        include.rownames=FALSE,
+        size='small'
+        )
+```
+
+## Analysis selections/features
+The remainder of the report refers to the data given the selections indicated below.
+
+### Years
+
+```{r}
+if (is.null(input$selectedYears)) {
+    years <- c(min(floor(dataf()$timeDx)), max(floor(dataf()$timeDx)))
+} else years <- input$selectedYears
+```
+
+The years selected are `r years[1]` to `r years[2]`.
+
+### Subgroups and stratification
+```{r}
+    ################################################## 
+    # SELECT SUBSET
+    ################################################## 
+```
+
++ Analysis (sub)group: `r subgroupVar()`
++ Stratified by: `r stratVar()`
+
+### Supplemental data on diagnosed People Living with HIV (PLWH)
+
+```{r}
+    ################################################## 
+    # PLWH
+    ################################################## 
+    kable(plwh())
+```
+
+## Data Exploration
+
+### Sample characteristics and testing history
+```{r}
+    ################################################## 
+    # DESCRIBE SAMPLE
+    ################################################## 
+    dataf <- dataf()
+    variables <- c(`Age Group`='agecat5', 
+                   `Race/Ethnicity`='race', 
+                   `Mode of Transmission`='mode')
+
+    everHadNegTest_subgrouptab <- tabTestHist(dataf, variables, 
+                                              supercolumn=TRUE,
+                                              fullsample_row=TRUE)
+    kable(everHadNegTest_subgrouptab,
+        caption='Column % sums to 100 within each characteristic. Availability of testing history data within each subgroup level is shown as row percents of %Yes, %No, and %Missing',
+        label='tab:sample',
+        digits=0,
+        table.placement='!h',
+        caption.placement='top',
+        include.rownames=FALSE,
+        size='small',
+        sanitize.text.function=function(str) { gsub('(\\.)*Percent(\\.)*', ' \\% ',str); }
+        )
+```
+
+### Testing histories over time
+```{r, fig.height=3}
+    ################################################## 
+    # PLOT TESTING HISTORIES
+    ################################################## 
+    plotTestHist(dataf())
+```
+
+### Diagnosis counts over time
+```{r, fig.height=3}
+plotDiagnoses(dataf())
+```
+
+```{r}
+      dataf <- dataf()
+      if (is.null(stratVar())) {
+      t1 <-     table(dataf$timeDx)
+      } else if (stratVar()=='None') {
+      t1 <-     table(dataf$timeDx)
+      } else {
+      t1 <-     table(dataf[,stratVar()], dataf$timeDx)
+      }
+      kable(t(t1),
+     caption='Diagnoses per time step, by strata',
+     label='tab:dxByMSM',
+     digits=0,
+    table.placement='!h',
+    caption.placement='top',
+    include.rownames=TRUE,
+    size='small',
+    sanitize.text.function=function(str) { gsub('(\\.)*Percent(\\.)*', ' \\% ',str); })
+```
+
+## Time from infection to diagnosis (TID)
+```{r, fig.height=4}
+plot(TIDs(), intLength=diagInterval(), 
+     cases = c('Base Case', 'Upper Bound'))
+```
+```{r}
+    pid <- TIDs()$base_case$cdf
+    pidU <- TIDs()$upper_bound$cdf
+
+    # Survivor fxn by quarter-year
+    pdf_dataframe <- data.frame(yrs=c(0, seq(diagInterval(),
+                                             by=diagInterval(),
+                                             length.out=length(pid))),
+                                surv=c(1, 1-pid),
+                                survU=c(1, 1-pidU))
+    # Focus on years and half-years, otherwise there's too much info
+    tidtimes <- pdf_dataframe$yrs
+    pdf_dataframe <- pdf_dataframe[round(tidtimes*2)==tidtimes*2,]
+
+    colnames(pdf_dataframe) <- c('Years since infection',
+                                 'Base Case',
+                                 'Upper Bound')
+    rownames(pdf_dataframe) <- NULL
+
+    kable(pdf_dataframe,
+          include.rownames=FALSE, 
+          caption='Fraction still undiagnosed under the two cases',
+          caption.placement='top',
+          digits=3)
+```
+
+## Time step and sample size
+
+The time step defining the time of diagnosis is `r as.numeric(diagInterval())` year(s). This results in the following distribution of diagnoses per time step:
+
+```{r}
+          dataf <- dataf()
+          diagBreaks <- c(0,5,20,50,999)
+          if (is.null(stratVar())) {
+              diagCounts = tabulateDiagnoses(dataf, intLength=diagInterval())
+              t2 <- table(cut(diagCounts[!is.na(diagCounts)], 
+                        breaks=diagBreaks,
+                        include.lowest=TRUE,
+                        right=FALSE))
+          } else if (stratVar()=='None') {
+              diagCounts = tabulateDiagnoses(dataf, intLength=diagInterval())
+              t2 <- table(cut(diagCounts[!is.na(diagCounts)], 
+                        breaks=diagBreaks,
+                        include.lowest=TRUE,
+                        right=FALSE))
+          } else {
+              t2 <- ddply(dataf, c(stratVar()), .fun=function(x) {
+                    diagCounts = tabulateDiagnoses(x, intLength=diagInterval())
+                    table(cut(diagCounts[!is.na(diagCounts)], 
+                              breaks=diagBreaks,
+                              include.lowest=TRUE, right=FALSE)) 
+                             })
+          }
+
+          kable(t2,
+                size='small',
+                caption='Number of time steps having 0-4, 5-19, 20-49, and 50-999 diagnoses, by selected stratum variable',
+                caption.placement='top')
+```
+
+## Results
+
+### Diagnoses, incidence and undiagnosed counts
+
+*Summary over all time steps*
+```{r}
+kable(results()$resultsSummary,
+      caption='Summary of reported diagnoses, estimated incidence for the two TID cases, and estimated undiagnosed counts for the two TID cases across all time periods.', 
+      caption.placement='top'
+      )
+```
+
+*By time step*
+```{r, fig.height=5}
+plot(results())
+```
+
+*By year - see next table*
+
+### True prevalence and undiagnosed fractions (if PLWH available)
+
+```{r, fig.height=5}
+if (!is.null(trueprev())) trueprev()$plot2
+```
+
+```{r, fig.height=5}
+tFull <- tableToDownload()[,c('Estimate', 'Diagnoses/Case', 'Year', 'Median', 'Mean')]
+tFull <- tFull[order(tFull$Estimate),]
+rownames(tFull) <- NULL
+kable(tFull, 
+      include.rownames=FALSE,
+      caption='Results by year', 
+      caption.placement='top')
+```
+
+
