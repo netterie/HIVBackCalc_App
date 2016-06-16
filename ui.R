@@ -151,7 +151,7 @@ shinyUI(
                      h5('Click to backcalculate infections:',textOutput("label4")),
                      actionButton('go', label='Run backcalculation'),
                      h5('Download analysis report'),
-                     radioButtons('format', 'Document format', c('PDF', 'HTML', 'Word'),
+                     radioButtons('format', 'Document format', c('Word', 'HTML'),
                                                       inline = TRUE),
                      downloadButton('downloadReport')
                   ),             

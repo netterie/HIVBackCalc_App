@@ -424,7 +424,8 @@ shinyServer(function(input, output, session) {
     dataf <- dataf()
     variables <- c(`Age Group`='agecat5', 
                    `Race/Ethnicity`='race', 
-                   `Mode of Transmission`='mode')
+                   `Mode of Transmission`='mode',
+                   `MSM Status`='mode2')
 
     everHadNegTest_subgrouptab <- tabTestHist(dataf, variables, 
                                               supercolumn=TRUE,
@@ -969,16 +970,19 @@ shinyServer(function(input, output, session) {
         },
         content = function(file) {
             src <- normalizePath('report.Rmd')
+            src2 <- normalizePath('word_styles.docx')
             # temporarily switch to the temp dir, in case you do not have write
             # permission to the current working directory
             owd <- setwd(tempdir())
             on.exit(setwd(owd))
             file.copy(src, 'report.Rmd', overwrite=TRUE)
+            file.copy(src2, 'word_styles.docx', overwrite=TRUE)
             library(rmarkdown)
-            out <- render('report.Rmd', switch(
-                input$format,
-                PDF = pdf_document(), HTML = html_document(), Word = word_document()
-            ))
+            out <- render('report.Rmd')
+            #, switch(
+            #    input$format,
+            #    PDF = pdf_document(), HTML = html_document(), Word = word_document()
+            #))
             file.rename(out, file)
         }
     )

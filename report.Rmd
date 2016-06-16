@@ -1,3 +1,13 @@
+---
+title: HIVBackCalc: Analysis Report
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: 
+  word_document:
+    reference_docx: word_styles.docx
+  html_document:
+    toc: true
+---
+
 
 ```{r, echo=FALSE, include=FALSE}
 ### SET OPTIONS
@@ -7,11 +17,10 @@ opts_chunk$set(fig.path='figure/minimal-', fig.align='center',
                fig.show='hold', concordance=TRUE, external=TRUE,
                tidy=TRUE, size='footnotesize', verbose=TRUE,
                purl=TRUE, warning=FALSE, echo=FALSE)
+library(pander)
+panderOptions('table.split.table',70)
+
 ```
-
-# HIVBackCalc: Analysis Report
- _`r format(Sys.time(), "%d %B, %Y")`_
-
 
 ## Raw Data
 
@@ -27,18 +36,13 @@ opts_chunk$set(fig.path='figure/minimal-', fig.align='center',
 The input data `r eh` raw eHARS data.
 
 ### Data preview
-The first 10 rows and 20 or so columns are displayed below.
+The first 10 rows and 10 columns are displayed below.
 
 ```{r}
-    ncol <- ncol(rawdata())
-    d1 <- ifelse(ncol>10, 10, ncol)
     ################################################## 
     # LOAD AND DISPLAY DATA
     ################################################## 
-    kable(rawdata()[1:10,1:d1])
-```
-```{r}
-    if (ncol>10) kable(rawdata()[1:10,(d1+1):ncol])
+    #pander(dataf()[1:10,1:10])
 ```
 
 ### Data diagnostics 
@@ -109,8 +113,8 @@ The years selected are `r years[1]` to `r years[2]`.
     ################################################## 
 ```
 
-+ Analysis (sub)group: `r subgroupVar()`
-+ Stratified by: `r stratVar()`
+*Analysis (sub)group*: `r subgroupVar()`
+*Stratified by*: `r stratVar()`
 
 ### Supplemental data on diagnosed People Living with HIV (PLWH)
 
@@ -181,7 +185,27 @@ plotDiagnoses(dataf())
     sanitize.text.function=function(str) { gsub('(\\.)*Percent(\\.)*', ' \\% ',str); })
 ```
 
+## Infection window lengths
+
+### Overall summary
+```{r}
+    pander(summary(dataf()$infPeriod))
+```
+
+### Mean window lengths by year
+```{r}
+kable(c(by(dataf(),dataf()$yearDx,function(x)mean(x$infPeriod,na.rm=T))),
+      digits=2)
+```
+
+### Test for time trend
+```{r}
+oneway.test(infPeriod~yearDx,data=dataf())
+```
+
+
 ## Time from infection to diagnosis (TID)
+
 ```{r, fig.height=4}
 plot(TIDs(), intLength=diagInterval(), 
      cases = c('Base Case', 'Upper Bound'))
