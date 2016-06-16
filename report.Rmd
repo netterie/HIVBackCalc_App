@@ -1,5 +1,5 @@
 ---
-title: HIVBackCalc: Analysis Report
+title: HIVBackCalc Analysis Report
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: 
   word_document:
