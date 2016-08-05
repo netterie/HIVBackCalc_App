@@ -6,6 +6,10 @@ output:
     reference_docx: word_styles.docx
   html_document:
     toc: true
+    toc_float: true
+    number_sections: true
+  pdf_document:
+    number_sections: true
 ---
 
 
@@ -78,14 +82,14 @@ The first 10 rows and 10 columns are displayed below.
         )
 ```
 
-### Summary of data formatting
+### Summary of data cleaning
 ```{r}
     ################################################## 
     # FORMAT DATA
     ################################################## 
-    kable(formattedDataList()$assumptions[,c(1,3)],
-        caption='Formatting assumptions applied to the data, in addition to the assumption selected for those with no testing history. Missing month/day and illogical last negative are relevant only when the input data are raw eHARS data.',
-        label='tab:format1',
+    kable(formattedDataList()$assumptions,
+        caption='Assumptions used to clean the data, and numbers of cases affected. The first 5 issues are relevant only when the input data are raw eHARS data.',
+        label='tab:formatA',
         digits=0,
         caption.placement='top',
         include.rownames=FALSE,
@@ -162,7 +166,15 @@ The years selected are `r years[1]` to `r years[2]`.
 
 ### Diagnosis counts over time
 ```{r, fig.height=3}
-plotDiagnoses(dataf())
+      dataf <- dataf()
+      if (is.null(stratVar())) {
+          panelgroup=NULL
+      } else if (stratVar()=='None') {
+          panelgroup=NULL
+      } else {
+          panelgroup=stratVar()
+      }
+      plotDiagnoses(dataf, panel=panelgroup)
 ```
 
 ```{r}
@@ -291,8 +303,9 @@ plot(results())
 
 ### True prevalence and undiagnosed fractions (if PLWH available)
 
-```{r, fig.height=5}
-if (!is.null(trueprev())) trueprev()$plot2
+```{r}
+if (!is.null(trueprev())) trueprev()$plot2 + 
+    theme(axis.text = element_text(size=8))
 ```
 
 ```{r, fig.height=5}

@@ -150,10 +150,10 @@ shinyUI(
                   sidebarPanel(
                      h5('Click to backcalculate infections:',textOutput("label4")),
                      actionButton('go', label='Run backcalculation'),
-                     h5('Download analysis report'),
-                     radioButtons('format', 'Document format', c('Word', 'HTML'),
-                                                      inline = TRUE),
-                     downloadButton('downloadReport')
+                     h5('Download analysis report as a Word, HTML or PDF file:'),
+                     downloadButton('downloadReportWord', label='Word'),
+                     downloadButton('downloadReportHTML', label='HTML'),
+                     downloadButton('downloadReportPDF', label='PDF')
                   ),             
                   mainPanel(
                      tabsetPanel('Data Panels',
@@ -168,7 +168,7 @@ shinyUI(
                               h6('3. Number of time steps having 0-4, 5-19, 20-49, and 50-999 diagnoses, by selected stratum variable'),
                               verbatimTextOutput('avgdxbytimestep'),
                               h5('Time step selection'),
-                              p('WARNING: if you aggregate to a 0.5-year or 1-year step, this can introduce a slight downward bias in early years and upward bias in the most recent 3-5 years, by as much as +/- 10% of cases when compared to the quarterly estimates. This translates into a smaller impact on the undiagnosed fraction. For example, a 10% bias in cases in a population with about 10% undiagnosed represents a X% bias in the undiagnosed fraction.'),
+                              p('WARNING: if you aggregate to a 0.5-year or 1-year step, this can introduce a slight downward bias in early years and upward bias in the most recent 3-5 years, by as much as +/- 10% of cases when compared to the quarterly estimates. This translates into a smaller impact on the undiagnosed fraction. For example, in a population with 15,000 PLWH of which 10% are undiagnosed, a +10% bias in undiagnosed cases will raise the undiagnosed fraction to 11%.'),
                               radioButtons("timestepChoice", 
                                           label = h6("Select a time step"), 
                                           choices = list("Quarter-Year" = 0.25,

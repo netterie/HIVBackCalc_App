@@ -447,7 +447,14 @@ shinyServer(function(input, output, session) {
   ################################################## 
   output$diagnoses_plot <- renderPlot({
       dataf <- dataf()
-      plotDiagnoses(dataf)
+      if (is.null(stratVar())) {
+          panelgroup=NULL
+      } else if (stratVar()=='None') {
+          panelgroup=NULL
+      } else {
+          panelgroup=stratVar()
+      }
+      plotDiagnoses(dataf, panel=panelgroup)
   })
   output$diagnoses_plot_coord <- renderText({
       paste0('x=', input$plot_click$x, 
@@ -896,7 +903,7 @@ shinyServer(function(input, output, session) {
                  scale_fill_manual(name='', values=c('#a8ddb5', '#43a2ca')) + 
                  theme_bw() + 
                  theme(legend.position='bottom') +
-                 theme(axis.text = element_text(size = 12))
+                 theme(axis.text = element_text(size = 10))
 
      return(list(table=trueprev, plot=trueprevplot,
                  plot2=trueprevplot2))
@@ -960,13 +967,13 @@ shinyServer(function(input, output, session) {
 
     # Report
     # see http://shiny.rstudio.com/gallery/download-knitr-reports.html
-    output$downloadReport <- downloadHandler(
+    output$downloadReportWord <- downloadHandler(
         filename = function() {
             validate(need(!is.null(results()),
                      'Results not ready'))
-            paste('undiagnosed_report', sep = '.', switch(
-            input$format, PDF = 'pdf', HTML = 'html', Word = 'docx'
-            ))
+            #paste('undiagnosed_report', sep = '.', 
+            #      switch(input$format, PDF = 'pdf', HTML = 'html', Word = 'docx'))
+            'undiagnosed_report.docx'
         },
         content = function(file) {
             src <- normalizePath('report.Rmd')
@@ -983,6 +990,38 @@ shinyServer(function(input, output, session) {
             #    input$format,
             #    PDF = pdf_document(), HTML = html_document(), Word = word_document()
             #))
+            file.rename(out, file)
+        }
+    )
+    output$downloadReportHTML <- downloadHandler(
+        filename = function() {
+            validate(need(!is.null(results()),
+                     'Results not ready'))
+            'undiagnosed_report.html'
+        },
+        content = function(file) {
+            src <- normalizePath('report.Rmd')
+            owd <- setwd(tempdir())
+            on.exit(setwd(owd))
+            file.copy(src, 'report.Rmd', overwrite=TRUE)
+            library(rmarkdown)
+            out <- render('report.Rmd', html_document())
+            file.rename(out, file)
+        }
+    )
+    output$downloadReportPDF <- downloadHandler(
+        filename = function() {
+            validate(need(!is.null(results()),
+                     'Results not ready'))
+            'undiagnosed_report.pdf'
+        },
+        content = function(file) {
+            src <- normalizePath('report.Rmd')
+            owd <- setwd(tempdir())
+            on.exit(setwd(owd))
+            file.copy(src, 'report.Rmd', overwrite=TRUE)
+            library(rmarkdown)
+            out <- render('report.Rmd', pdf_document())
             file.rename(out, file)
         }
     )
