@@ -25,7 +25,8 @@ shinyUI(
                      br(), br(), br()
                    ),
                    mainPanel(
-                     tabsetPanel('Data Panels',
+                     tabsetPanel(id='Data Panels',
+				 # Note, thank goodness for Stack Overflow! Changes in shiny require the id= part. Before it was not necessary.
                          tabPanel('Confirm Data',
                               column(width=7,	
                                      h5('File Contents'),
@@ -91,7 +92,7 @@ shinyUI(
                  )
              ),
              tabPanel('Examine Data',
-                tabsetPanel('Summary Tabs',
+                tabsetPanel(id='Summary Tabs',
                 tabPanel('Overview',
                    h5('Description of sample by age, race and mode of transmission'),
                    tableOutput('describe_sample')
@@ -122,7 +123,7 @@ shinyUI(
                tableOutput('TIDPDF_table')
              ),
              tabPanel('Debug Info',
-                tabsetPanel('Debug Tabs',
+                tabsetPanel(id='Debug Tabs',
                 tabPanel('Variable Summaries',
                    h5('All records'),
                    tableOutput('allRecords_table'),
@@ -156,7 +157,7 @@ shinyUI(
                      downloadButton('downloadReportPDF', label='PDF')
                   ),             
                   mainPanel(
-                     tabsetPanel('Data Panels',
+                     tabsetPanel(id='Data Panels',
                      tabPanel('Time Step',
                               h5('Select a time step'),
                               p('The time step refers to the interval by which diagnosis dates are identified. The time step influences the sample size, as longer time steps will accumulate more diagnoses, as well as the interpretation of results, as it changes the definition of "undiagnosed." For example, 25 diagnoses per quarter = 100 diagnoses per year, and someone who is infected in Q1 but diagnosed in Q4 is undiagnosed for 3 quarters but still diagnosed in the same year in which they were infected. The default time step is a quarter-year (0.25).'),
